@@ -1109,15 +1109,15 @@ function renderTray(b, o, sel){
   if (liquid) s += L(ty+62, ['Liquid quick-disconnects', 'cold plates on every GPU and CPU'], liqCol, [tx+14, ty+36]);
   s += L(bY+40, [`${xpb} × ${X.name} per board`, `${nb} board${nb>1?'s':''} per tray · ${X.tdp_w} W each`], 'var(--brand)', [xpuPos[0].x-cw/2, xpuPos[0].top+20]);
   if (cpb) s += L(rowY+rowH/2, [`${r.cpus_per_tray} × ${C.name} per tray`, `${C.mem} · ${C.c2c}`], '#7A4FB5', [areaX+(boardW-cpuTotal)/2-2, rowY+rowH/2]);
-  else if (hostBoard) s += Rt(bY+bH+18, [`${r.cpus_per_tray} × ${C.name} on a host board`, `${C.mem} · accelerators attach over PCIe`], '#7A4FB5', [tx+tw-24-8, bY+bH-12]);
+  else if (hostBoard) s += Rt(ty+th-150, [`${r.cpus_per_tray} × ${C.name} on a host board`, `${C.mem} · accelerators attach over PCIe`], '#7A4FB5', [tx+tw-24-8, bY+bH-12]);
   if (nn) s += L(fy-26, [`PCIe ${N.pcie.split(' ')[0]} ${N.pcie.split(' ')[1]||''} GPU → NIC`, `one lane group per GPU: GPU-direct RDMA`], pcieCol, [cardPos[0]-cardW/2, fy+6]);
   if (drives) s += L(ty+th-14, [`${drives} × E1.S NVMe · BMC 1 GbE`, 'local storage and out-of-band management'], 'var(--ink-3)', [tx+24, ty+th-30]);
   // ---- callouts, right
   s += Rt(ty+48, ['48 V DC busbar clip', `≈ ${fmt((r.xpus_per_tray*X.tdp_w + r.cpus_per_tray*C.tdp_w + nn*N.tdp_w + dpuN*P.tdp_w)/1000,1)} kW silicon per tray`], pwrCol, [tx+tw-10, ty+40]);
-  if (cages) s += Rt(fy+cardH+34, [`${nn} × ${N.name} in ${cages} × ${so.module_gbps}G ${M(so.nic_media).short} cage${cages>1?'s':''}`, `${M(so.nic_media).name} · ${fmt(nn*N.gbps/1000,1)} Tb/s per tray`], nicCol, [tx+tw-24-(dpuN?dpuN*62+16:0)+2, cageY+9]);
+  if (cages) s += Rt(cageY-8, [`${nn} × ${N.name} in ${cages} × ${so.module_gbps}G ${M(so.nic_media).short} cage${cages>1?'s':''}`, `${M(so.nic_media).name} · ${fmt(nn*N.gbps/1000,1)} Tb/s per tray`], nicCol, [tx+tw-24-(dpuN?dpuN*62+16:0)+2, cageY+9]);
   if (dpuN) s += Rt(fy-4, [`${dpuN} × ${P.name} ${P.gbps}G`, 'front-end / storage · PCIe from the host'], dpuCol, [tx+tw-24-8, fy+10]);
   // per-tray figures (right margin, between the callouts)
-  const sx=tx+tw+40; let sy=ty+96;
+  const sx=tx+tw+40; let sy=ty+90;
   [['SCALE-UP OUT OF TRAY', `${fmt(r.xpus_per_tray*o.link.xpu_tbs_bidir,1)} TB/s · ${fmt(r.xpus_per_tray*o.link.xpu_lanes)} lanes/dir`],['SCALE-OUT OUT OF TRAY', `${fmt(nn*N.gbps/1000,1)} Tb/s · ${cages} cages`],['TRAY POWER (SILICON)', `${fmt((r.xpus_per_tray*X.tdp_w + r.cpus_per_tray*C.tdp_w + nn*N.tdp_w + dpuN*P.tdp_w)/1000,1)} kW`],['HBM PER TRAY', `${fmt(r.xpus_per_tray*X.hbm_gb/1000,2)} TB · ${fmt(r.xpus_per_tray*X.hbm_tbs)} TB/s`]].forEach(([k,v])=>{ s += text(sx,sy,k,{cls:'t-eyebrow'})+text(sx,sy+15,v,{cls:'t-label'}); sy+=38; });
 
   /* ---------------- switch tray ---------------- */
