@@ -303,7 +303,7 @@ document.addEventListener('click', e=>{
   if (t.id==='btn-load'){ importJSON($('#io').value); return; }
   if (t.id==='btn-import'){ $('#file-import').click(); return; }
   if (t.id==='btn-svg'){ saveSVG(); return; }
-  if (t.id==='btn-theme'){ const root=document.documentElement; const cur = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); root.dataset.theme = cur==='dark'?'light':'dark'; LS.set('re.theme', root.dataset.theme); return; }
+  if (t.id==='btn-theme'){ const root=document.documentElement; const cur = root.dataset.reTheme || 'light'; root.dataset.reTheme = cur==='dark'?'light':'dark'; LS.set('re.theme', root.dataset.reTheme); return; }
   if (t.id==='zoom-in'){ state.zoom=Math.min(2.5,state.zoom*1.25); renderCanvas(); return; }
   if (t.id==='zoom-out'){ state.zoom=Math.max(.5,state.zoom/1.25); renderCanvas(); return; }
   if (t.id==='zoom-fit'){ state.zoom=1; renderCanvas(); return; }
@@ -342,7 +342,7 @@ function writeHash(){ try{ history.replaceState(null,'',`#arch=${encodeURICompon
 function readHash(){ const m = Object.fromEntries(location.hash.slice(1).split('&').filter(Boolean).map(kv=>kv.split('=').map(decodeURIComponent))); if (m.view && ['board','tray','rack','scaleup','scaleout','compare'].includes(m.view)) state.view = m.view; return m.arch; }
 
 /* ---------------- boot ---------------- */
-const th = LS.get('re.theme', null); if (th) document.documentElement.dataset.theme = th;
+const th = LS.get('re.theme', null); if (th === 'dark') document.documentElement.dataset.reTheme = 'dark';
 renderMediaLegend();
 const archFromHash = readHash();
 loadPreset(archFromHash && allPresets().find(p=>p.id===archFromHash) ? archFromHash : 'gb200_nvl72');

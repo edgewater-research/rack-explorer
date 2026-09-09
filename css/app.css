@@ -1,4 +1,5 @@
-/* Rack Explorer — Edgewater Research house style: engineering drawing sheet on grid paper. */
+/* Rack Explorer — Edgewater Research house style: engineering drawing sheet on grid paper.
+   Light theme by default regardless of OS / viewer setting; dark is an explicit in-app opt-in (data-re-theme). */
 :root{
   --paper:#F1F4F7; --sheet:#FFFFFF; --panel:#FAFBFC;
   --ink:#101A28; --ink-2:#465264; --ink-3:#7F8A9C; --rule:#D3DAE3; --rule-2:#E6EBF0;
@@ -13,18 +14,7 @@
   --shadow:0 1px 2px rgba(16,26,40,.06),0 8px 24px rgba(16,26,40,.06);
   color-scheme:light;
 }
-@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
-  --paper:#0E1319; --sheet:#151B24; --panel:#121820;
-  --ink:#E7ECF3; --ink-2:#AEB8C7; --ink-3:#7D889B; --rule:#2B3542; --rule-2:#202934;
-  --brand:#7FB0EE; --brand-tint:#1A2A40; --brand-ink:#A9CBF5;
-  --select:#F0B429; --select-tint:#3A2E10;
-  --good:#4FB37A; --warn:#E39A3B; --bad:#E06A5E; --info:#7FB0EE;
-  --f-xpu:#22385A; --f-cpu:#34305A; --f-mem:#242D38; --f-nic:#1F3B32; --f-sw:#4A3320; --f-dpu:#2E3F22; --f-pwr:#4A3D14; --f-conn:#1B2330; --f-tray:#1A212B; --f-rack:#141B24;
-  --grid:rgba(127,176,238,.07);
-  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
-  color-scheme:dark;
-}}
-:root[data-theme="dark"]{
+:root[data-re-theme="dark"]{
   --paper:#0E1319; --sheet:#151B24; --panel:#121820;
   --ink:#E7ECF3; --ink-2:#AEB8C7; --ink-3:#7D889B; --rule:#2B3542; --rule-2:#202934;
   --brand:#7FB0EE; --brand-tint:#1A2A40; --brand-ink:#A9CBF5;
