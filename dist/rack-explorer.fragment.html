@@ -871,10 +871,12 @@ function hit(key, sel, inner, extraCls=''){ return g(inner, {cls:`hit ${extraCls
 
 /* A silicon package: rounded rect, pin-1 notch, name + two sub lines. */
 function chip(x,y,w,h,name,sub1,sub2,fill,key,sel){
-  const inner = rect(x,y,w,h,{rx:6,cls:`${fill} ink sel-target`,style:'stroke-width:1.4'}) +
-    rect(x+8,y+8,w-16,h-16,{rx:3,cls:'f-none rule2',style:'stroke-width:1'}) +
+  const narrow = w < 70;
+  if (narrow){ sub1=''; sub2=''; name = String(name).replace(/Trainium/,'Trn').replace(/Blackwell/,'B').replace(/\s.*$/,'').slice(0,7); }
+  const inner = rect(x,y,w,h,{rx:narrow?4:6,cls:`${fill} ink sel-target`,style:'stroke-width:1.4'}) +
+    rect(x+(narrow?5:8),y+(narrow?5:8),w-(narrow?10:16),h-(narrow?10:16),{rx:3,cls:'f-none rule2',style:'stroke-width:1'}) +
     path(`M${x+4} ${y+12} L${x+12} ${y+4}`,{cls:'ink2',style:'stroke-width:1.2'}) +
-    text(x+w/2,y+h/2-(sub1?4:-5),name,{cls:'t-chip',anchor:'middle'}) +
+    text(x+w/2,y+h/2-(sub1?4:-5),name,{cls:'t-chip',anchor:'middle',style:narrow?'font-size:10px':''}) +
     (sub1?text(x+w/2,y+h/2+11,sub1,{cls:'t-chip-s',anchor:'middle'}):'') +
     (sub2?text(x+w/2,y+h/2+23,sub2,{cls:'t-chip-s',anchor:'middle'}):'');
   return key ? hit(key, sel, inner) : g(inner);
@@ -891,7 +893,7 @@ function callout(x1,y1,x2,y2,lines,color,anchor='start'){
   let s = `<circle cx="${x1}" cy="${y1}" r="2.6" style="fill:${color}"/>` +
     path(`M${x1} ${y1} L${x2 - dir*14} ${y2} L${x2} ${y2}`,{cls:'leader',style:`stroke:${color}`});
   let arr = Array.isArray(lines)?lines.slice():[lines];
-  if (arr[0] && arr[0].length > 34){ const cut = arr[0].lastIndexOf(' ', 34); if (cut > 12){ arr = [arr[0].slice(0,cut), arr[0].slice(cut+1), ...arr.slice(1)]; } }
+  const lim = anchor==='end' ? 34 : 40; if (arr[0] && arr[0].length > lim){ const cut = arr[0].lastIndexOf(' ', lim); if (cut > 12){ arr = [arr[0].slice(0,cut), arr[0].slice(cut+1), ...arr.slice(1)]; } }
   arr.forEach((l,i)=>{ s += text(tx, y2 + 4 + i*13 - (arr.length-1)*6.5, l, {cls:i?'t-small':'t-label', anchor, style:i?'':`fill:${color};font-weight:600`}); });
   return s;
 }
@@ -1027,86 +1029,128 @@ function renderBoard(b, o, sel){
 }
 
 /* =====================================================================
-   2. TRAY
+   2. TRAY — plan view with the data paths: rear scale-up connectors, boards, PCIe to front NICs
    ===================================================================== */
 function renderTray(b, o, sel){
-  const r=b.rack, su=b.scaleup, so=b.scaleout, X=b.blocks.xpu, C=b.blocks.cpu, N=b.blocks.nic, P=b.blocks.dpu, SW=b.blocks.sw;
-  const W=1240, H= r.switch_trays ? 860 : 640;
+  const r=b.rack, su=b.scaleup, so=b.scaleout, bd=b.board, X=b.blocks.xpu, C=b.blocks.cpu, N=b.blocks.nic, P=b.blocks.dpu, SW=b.blocks.sw;
+  const hasSw = r.switch_trays>0, W=1240, H = hasSw ? 960 : 760;
   const ctx = ctxFor(b,'tray',2,5);
-  ctx.sub = `${r.compute_trays} compute trays · ${r.xpus_per_tray} × ${xpuShort(b)} · ${r.cpus_per_tray} × ${C.name} · ${Math.round(r.xpus_per_tray*r.nics_per_xpu)} × ${N.name}` + (r.switch_trays?` · ${r.switch_trays} switch trays × ${r.switch_chips_per_tray} ${SW.name.split(' (')[0]}`:'');
+  const nb=Math.max(1,r.boards_per_tray|0), xpb=Math.ceil(r.xpus_per_tray/nb), hostBoard = (bd.cpus|0)===0 && r.cpus_per_tray>0, cpb = hostBoard?0:Math.ceil(r.cpus_per_tray/nb);
+  const nn=Math.round(r.xpus_per_tray*r.nics_per_xpu), cages = so.module_gbps?Math.ceil(nn*N.gbps/so.module_gbps):0, portsPerCage = cages?Math.max(1,Math.round(so.module_gbps/Math.max(1,N.gbps))):0;
+  const dpuN=r.dpus_per_tray|0, drives=r.drives_per_tray??0, mgmt=r.mgmt_ports_per_tray??1, inSw=r.switch_chips_per_compute_tray|0;
+  const suCol=M(su.media_xpu_sw).color, nicCol=M(so.nic_media).color, dpuCol=M(so.dpu_media).color, pcieCol=D.CONNECTOR_CATS.pcie.color, pwrCol=D.CONNECTOR_CATS.power.color, liqCol='#2F8F83', c2cCol=D.CONNECTOR_CATS.c2c.color;
+  const liquid = /liquid/i.test(r.cooling);
+  ctx.sub = `${r.compute_trays} compute trays × (${r.xpus_per_tray} ${xpuShort(b)} · ${r.cpus_per_tray} ${C.name} · ${nn} ${N.name})` + (hasSw?` · ${r.switch_trays} switch trays × ${r.switch_chips_per_tray} ${SW.name.split(' (')[0]}`:'') + ` · ${r.cooling}`;
   let s='';
-  // ---- compute tray (plan view). Rear (top edge) = scale-up connectors; front (bottom edge) = NIC cages.
-  const tx=300, ty=110, tw=700, th=300;
-  s += text(tx, ty-14, `COMPUTE TRAY  ·  ×${r.compute_trays} per rack  ·  ${r.cooling}`, {cls:'t-eyebrow'});
-  s += hit('tray:compute', sel, rect(tx,ty,tw,th,{rx:4,cls:'f-tray ink sel-target',style:'stroke-width:1.6'}));
-  s += text(tx+tw+8, ty+12, 'REAR', {cls:'t-eyebrow'}); s += text(tx+tw+8, ty+th-4, 'FRONT', {cls:'t-eyebrow'});
-  // boards
-  const nb = Math.max(1, r.boards_per_tray|0), xpb = Math.ceil(r.xpus_per_tray/nb), cpb = Math.round(r.cpus_per_tray/nb*10)/10;
-  const boardGap = 24, boardW = (tw - 60 - (nb-1)*boardGap - (P.gbps&&r.dpus_per_tray?0:0))/nb, boardH = 170, bY = ty+54;
-  const suCol = M(su.media_xpu_sw).color;
-  for (let i=0;i<nb;i++){
-    const bX = tx+30 + i*(boardW+boardGap);
-    s += hit('board', sel, rect(bX,bY,boardW,boardH,{rx:6,cls:'f-sheet ink2 sel-target',style:'stroke-width:1.1'}));
-    s += text(bX+8,bY+14,b.board.name,{cls:'t-small'});
-    const cw = Math.min(84,(boardW-16-(xpb-1)*8)/xpb);
-    for (let k=0;k<xpb;k++){ const x=bX+8+k*(cw+8); s += chip(x,bY+22,cw,cw*0.8,xpuShort(b),'','','f-xpu','xpu',sel);
-      // rear connector per XPU
-      s += hit('seg:'+(o.segments[0]?.id||'xpu_sw'), sel, block(x+4, ty+8, cw-8, 14, suCol, '', {fs:8}));
-      s += line(x+cw/2, bY+22, x+cw/2, ty+22, {style:`stroke:${suCol};stroke-width:1.2;opacity:.8`}); }
-    if (cpb>0){ for (let k=0;k<Math.ceil(cpb);k++){ const x=bX+8+k*(cw*1.2+8); s += chip(x,bY+22+cw*0.8+12,cw*1.2,cw*0.75,C.name.split(' ')[0],'','','f-cpu','cpu',sel); }
-      for (let m=0;m<Math.min(4,C.mem_modules);m++){ const x=bX+8+Math.ceil(cpb)*(cw*1.2+8)+m*18; s += hit('mem',sel,rect(x,bY+22+cw*0.8+12,12,cw*0.75,{rx:2,cls:'f-mem ink2 sel-target'})); } }
-  }
-  // in-tray switches (HGX style)
-  if (r.switch_chips_per_compute_tray){
-    for (let i=0;i<r.switch_chips_per_compute_tray;i++){ const x = tx+tw-30-(i+1)*76; s += chip(x, bY+boardH+14, 70, 40, 'NVSW', `${SW.ports} p`, '', 'f-sw', 'sw', sel); }
-    s += callout(tx+tw-30-30, bY+boardH+54, tx+tw+40, bY+boardH+80, [`${r.switch_chips_per_compute_tray} × ${SW.name}`, `scale-up stays on the baseboard (${M(su.media_xpu_sw).name})`], M('pcb').color);
-  }
-  // front: NIC cages & DPUs & power
-  const nn = Math.round(r.xpus_per_tray*r.nics_per_xpu), nicCol = M(so.nic_media).color, dpuCol = M(so.dpu_media).color;
-  const modules = so.module_gbps ? Math.ceil(nn*N.gbps/so.module_gbps) : 0;
-  let fx = tx+30; const fy = ty+th-30;
-  for (let i=0;i<modules;i++){ s += hit('soseg:so_nic', sel, block(fx, fy, 34, 22, nicCol, `${so.module_gbps}G`, {fs:8})); fx += 40; }
-  if (nn) s += callout(tx+30+17, fy+22, tx+30-60, ty+th+50, [`${nn} × ${N.name} (${N.gbps}G)`, `→ ${modules} × ${so.module_gbps}G ${M(so.nic_media).short} ports`, `${fmt(nn*N.gbps/1000,1)} Tb/s scale-out per tray`], nicCol, 'end');
-  fx += 24;
-  for (let i=0;i<r.dpus_per_tray;i++){ s += hit('dpu', sel, block(fx, fy, 46, 22, dpuCol, 'DPU', {fs:8, op:.75})); fx += 52; }
-  if (r.dpus_per_tray) s += callout(fx-52+23, fy+22, fx+40, ty+th+50, [`${r.dpus_per_tray} × ${P.name} (${P.gbps}G)`, `front-end / storage network (${M(so.dpu_media).short})`], dpuCol);
-  // power & liquid
-  s += block(tx+tw-120, ty+8, 90, 14, D.CONNECTOR_CATS.power.color, '48 V / busbar', {fs:8});
-  if (/liquid/i.test(r.cooling)) { s += block(tx+tw-120, ty+28, 90, 12, '#3E8A5A', 'liquid in/out', {fs:8, op:.7}); }
-  // rear callout
-  s += callout(tx+30+((Math.min(64,(boardW-16-(xpb-1)*8)/xpb))/2), ty+8, tx-40, ty-40+14, [`${r.xpus_per_tray*su.links_per_xpu} ${su.name} links leave the tray`, `${fmt(r.xpus_per_tray*o.link.xpu_lanes)} lanes/dir · ${M(su.media_xpu_sw).name}`], suCol, 'end');
-  // right-hand summary
-  const sx = tx+tw+60; let sy = ty+40;
-  const kv = (k,v)=>{ s += text(sx, sy, k, {cls:'t-eyebrow'}) + text(sx, sy+15, v, {cls:'t-label'}); sy += 34; };
-  kv('PER TRAY', `${r.xpus_per_tray} × ${X.name}`);
-  kv('HOST', r.cpus_per_tray ? `${r.cpus_per_tray} × ${C.name}` : 'No host CPU in tray');
-  kv('SCALE-UP OUT', `${fmt(r.xpus_per_tray*o.link.xpu_tbs_bidir,1)} TB/s bidir`);
-  kv('SCALE-OUT OUT', `${fmt(nn*N.gbps/1000,1)} Tb/s (${nn} NIC ports)`);
-  kv('TRAY POWER (SILICON)', `${fmt((r.xpus_per_tray*X.tdp_w + r.cpus_per_tray*C.tdp_w + nn*N.tdp_w + r.dpus_per_tray*P.tdp_w)/1000,1)} kW`);
-  // ---- switch tray
-  if (r.switch_trays){
-    const sy0 = ty+th+120, sh = 200;
-    s += text(tx, sy0-14, `SWITCH TRAY  ·  ×${r.switch_trays} per rack  ·  ${SW.name}`, {cls:'t-eyebrow'});
-    s += hit('tray:switch', sel, rect(tx,sy0,tw,sh,{rx:4,cls:'f-tray ink sel-target',style:'stroke-width:1.6'}));
-    const k = r.switch_chips_per_tray, swW = Math.min(200, (tw-80-(k-1)*30)/k);
-    let cx = tx + (tw - (k*swW + (k-1)*30))/2;
-    const ports = SW.ports;
-    for (let i=0;i<k;i++){
-      s += chip(cx, sy0+70, swW, 90, SW.name.split(' (')[0], `${ports} × ${fmt(o.link.link_gbps_dir)}G ports`, `${fmt(SW.tbs_bidir,1)} TB/s`, 'f-sw', 'sw', sel);
-      // rear connectors: one block per 18 ports-ish
-      const nblk = Math.max(2, Math.min(9, Math.round(ports/8)));
-      for (let j=0;j<nblk;j++){ const bwid = (swW-8)/nblk - 3; s += hit('seg:'+(o.segments[0]?.id||'xpu_sw'), sel, block(cx+4+j*((swW-8)/nblk), sy0+8, bwid, 14, suCol, '', {fs:8})); s += line(cx+4+j*((swW-8)/nblk)+bwid/2, sy0+22, cx+4+j*((swW-8)/nblk)+bwid/2, sy0+70, {style:`stroke:${suCol};stroke-width:1;opacity:.7`}); }
-      cx += swW+30;
+  const tx=300, ty=110, tw=640, th=410;
+  const L = (y, lines, color, from) => callout(from[0], from[1], tx-34, y, lines, color, 'end');       // left callout
+  const Rt = (y, lines, color, from) => callout(from[0], from[1], tx+tw+34, y, lines, color, 'start'); // right callout
+
+  /* ---------------- compute tray ---------------- */
+  s += text(tx, ty-16, `COMPUTE TRAY · PLAN VIEW · ×${r.compute_trays} PER RACK · ${liquid?'DIRECT LIQUID COOLING':'AIR COOLED'}`, {cls:'t-eyebrow'});
+  s += hit('tray:compute', sel, rect(tx,ty,tw,th,{rx:5,cls:'f-tray ink sel-target',style:'stroke-width:1.6'}));
+  s += text(tx+tw+8, ty+14, 'REAR', {cls:'t-eyebrow'}) + text(tx+tw+8, ty+th-4, 'FRONT', {cls:'t-eyebrow'});
+  // rear: power clip + liquid QDs
+  s += rect(tx+tw-22, ty+8, 12, 64, {rx:2,style:`fill:${pwrCol};fill-opacity:.9`}) + text(tx+tw-16, ty+40, '48 V', {cls:'t-tb',anchor:'middle',style:'fill:#fff;font-weight:600;font-size:8px',extra:`transform="rotate(-90 ${tx+tw-16} ${ty+40})"`});
+  if (liquid){ [0,1].forEach(i=>{ s += `<circle cx="${tx+14}" cy="${ty+18+i*18}" r="6" style="fill:${liqCol};fill-opacity:.9"/><circle cx="${tx+14}" cy="${ty+18+i*18}" r="2.5" class="f-sheet"/>`; });
+    s += line(tx+14, ty+42, tx+14, ty+th-60, {style:`stroke:${liqCol};stroke-width:2;opacity:.5`}); }
+  // geometry: boards, XPU grid (2 rows when more than 4 per board), rear connectors per column
+  const areaX = tx+30, areaW = tw-60-(hostBoard?150:0)-10, boardGap=18, boardW=(areaW-(nb-1)*boardGap)/nb, bY=ty+56, bH=th-56-140;
+  const rows = xpb>4 ? 2 : 1, cols = Math.ceil(xpb/rows), slot = boardW/cols;
+  const cw = Math.min(96, slot-18); let ch = Math.round(cw*0.78); if (rows>1 && (cpb||inSw)) ch = Math.min(ch, 44);
+  const xy = bY+26, rowY = xy + rows*(ch+12) + 6, rowH = Math.max(50, bY+bH-rowY-14);
+  const conns=[], xpuPos=[];
+  for (let i=0;i<nb;i++){ const bx=areaX+i*(boardW+boardGap);
+    for (let c=0;c<cols;c++){ const cwid=Math.min(104, slot-14), cx=bx+(c+.5)*slot; conns.push({x:cx-cwid/2,w:cwid,cx}); }
+    for (let k=0;k<xpb;k++){ const row=Math.floor(k/cols), col=k%cols, cx=bx+(col+.5)*slot, y=xy+row*(ch+12); xpuPos.push({x:cx, top:y, bot:y+ch, row, board:i, col}); } }
+  const connFor = pp => conns[pp.board*cols+pp.col];
+  const cageY=ty+th-24, fy=ty+th-96, cardH=34, zoneL=tx+24+(drives?Math.min(drives,8)*14+40:0)+(mgmt?34:0), zoneR=tx+tw-24-(dpuN?dpuN*62+16:0);
+  const cardPos=[]; if (nn){ for (let j=0;j<nn;j++) cardPos.push(zoneL+(j+.5)*((zoneR-zoneL)/nn)); }
+  const cardW = nn ? Math.min(72, (zoneR-zoneL)/nn-8) : 0;
+  // CPU geometry per board
+  const memN=Math.min(4, bd.mem_per_cpu|0), cpuW=104, memW=13, unit = cpuW + memN*(memW+4) + 26, cpuTotal = cpb*unit - 26;
+  const cpuCx = (i,c) => areaX+i*(boardW+boardGap) + (boardW-cpuTotal)/2 + c*unit + Math.floor(memN/2)*(memW+4) + cpuW/2;
+  // 1. rear connectors
+  conns.forEach((cn,i)=>{ const perConn = su.links_per_xpu*rows; const lab = `${su.name.replace(/\s*\(.*\)/,'')} × ${perConn}`; s += hit('seg:'+(o.segments[0]?.id||'xpu_sw'), sel, rect(cn.x, ty+8, cn.w, 20, {rx:2,cls:'sel-target',style:`fill:${suCol};stroke:${suCol}`}) + (lab.length*6.2 < cn.w-8?text(cn.cx, ty+22, lab, {cls:'t-tb',anchor:'middle',style:'fill:#fff;font-weight:600'}):'')); });
+  // 2. board outlines
+  for (let i=0;i<nb;i++){ const bx=areaX+i*(boardW+boardGap); s += hit('board', sel, rect(bx,bY,boardW,bH,{rx:6,cls:'f-sheet ink2 sel-target',style:'stroke-width:1.1'}) + text(bx+10,bY+15,`${bd.name}${nb>1?' '+(i+1):''}`,{cls:'t-small'})); }
+  if (hostBoard){ const hx=areaX+areaW+18, hw=tw-48-areaW-18; s += hit('board',sel,rect(hx,bY,hw,bH,{rx:6,cls:'f-sheet ink2 sel-target',style:'stroke-width:1.1'})+text(hx+10,bY+15,'Host board',{cls:'t-small'})); }
+  // 3. wires (under the silicon): NVLink traces, C2C, PCIe
+  xpuPos.forEach(pp=>{ const cn=connFor(pp); const n=4, span = pp.row===0 ? 18 : cw+8; for (let t=0;t<n;t++){ const fx = pp.x - span/2 + t*(span/(n-1)); s += line(fx, pp.top, fx, ty+28, {style:`stroke:${suCol};stroke-width:1.1;opacity:.75`}); } void cn; });
+  if (cpb){ for (let i=0;i<nb;i++) for (let c=0;c<cpb;c++){ const cx=cpuCx(i,c); xpuPos.filter(pp=>pp.board===i).forEach(pp=>{ s += path(`M${cx} ${rowY} C ${cx} ${rowY-14}, ${pp.x} ${pp.bot+14}, ${pp.x} ${pp.bot}`, {cls:'f-none',style:`stroke:${c2cCol};stroke-width:1.2;opacity:.7`}); }); } }
+  if (inSw){ for (let i=0;i<nb;i++){ const bx=areaX+i*(boardW+boardGap), per=Math.ceil(inSw/nb), swW=Math.min(150,(boardW-40)/per-20); let sx=bx+(boardW-(per*swW+(per-1)*20))/2; for (let j=0;j<per;j++){ xpuPos.filter(pp=>pp.board===i).forEach(pp=>{ s += path(`M${pp.x} ${pp.bot} C ${pp.x} ${pp.bot+14}, ${sx+swW/2} ${rowY-14}, ${sx+swW/2} ${rowY}`,{cls:'f-none',style:`stroke:${suCol};stroke-width:1;opacity:.5`}); }); sx+=swW+20; } } }
+  if (nn){ xpuPos.forEach((pp,i)=>{ const j=Math.min(nn-1, Math.floor(i*nn/Math.max(1,xpuPos.length))); const cx=cardPos[j]; s += path(`M${pp.x} ${pp.bot} C ${pp.x} ${pp.bot+80}, ${cx} ${fy-60}, ${cx} ${fy}`, {cls:'f-none',style:`stroke:${pcieCol};stroke-width:1.4;opacity:.8`}); });
+    if (r.nics_per_xpu>1){ for (let i=0;i<xpuPos.length;i++) for (let m=1;m<r.nics_per_xpu;m++){ const j=Math.min(nn-1, i*Math.round(r.nics_per_xpu)+m); s += path(`M${xpuPos[i].x} ${xpuPos[i].bot} C ${xpuPos[i].x} ${xpuPos[i].bot+80}, ${cardPos[j]} ${fy-60}, ${cardPos[j]} ${fy}`, {cls:'f-none',style:`stroke:${pcieCol};stroke-width:1.2;opacity:.5`}); } } }
+  if (dpuN){ for (let i=0;i<dpuN;i++){ const dx=tx+tw-24-(dpuN-i)*62+8; const srcX = cpb ? cpuCx(nb-1, cpb-1) : (hostBoard ? areaX+areaW+18+(tw-48-areaW-18)/2 : xpuPos[xpuPos.length-1].x); const srcY = bY+bH; s += path(`M${srcX} ${srcY} C ${srcX} ${srcY+40}, ${dx+27} ${fy-40}, ${dx+27} ${fy}`, {cls:'f-none',style:`stroke:${pcieCol};stroke-width:1;opacity:.5;stroke-dasharray:4 3`}); } }
+  // 4. silicon
+  xpuPos.forEach(pp=>{ s += chip(pp.x-cw/2, pp.top, cw, ch, xpuShort(b), cw>=92?`${X.hbm_gb} GB · ${X.hbm_tbs} TB/s`:(cw>=76?`${X.hbm_gb} GB HBM`:''), '', 'f-xpu', 'xpu', sel); });
+  for (let i=0;i<nb;i++){ const bx=areaX+i*(boardW+boardGap);
+    if (cpb){ let cx0 = bx + (boardW-cpuTotal)/2;
+      for (let c=0;c<cpb;c++){ const half=Math.floor(memN/2); let mx=cx0;
+        for (let m=0;m<half;m++){ s += hit('mem',sel,rect(mx,rowY,memW,rowH,{rx:2,cls:'f-mem ink2 sel-target',style:'stroke-width:.7'})+rect(mx+2,rowY+4,memW-4,rowH-8,{cls:'hatch'})); mx+=memW+4; }
+        s += chip(mx, rowY, cpuW, rowH, C.name.split(' ')[0], C.cores?`${C.cores} cores`:'', '', 'f-cpu', 'cpu', sel); mx += cpuW+4;
+        for (let m=half;m<memN;m++){ s += hit('mem',sel,rect(mx,rowY,memW,rowH,{rx:2,cls:'f-mem ink2 sel-target',style:'stroke-width:.7'})+rect(mx+2,rowY+4,memW-4,rowH-8,{cls:'hatch'})); mx+=memW+4; }
+        cx0 += unit; } }
+    else if (inSw){ const per=Math.ceil(inSw/nb), swW=Math.min(150,(boardW-40)/per-20); let sx=bx+(boardW-(per*swW+(per-1)*20))/2; for (let j=0;j<per;j++){ s += chip(sx,rowY,swW,rowH,SW.name.split(' ')[0].replace('NVLink','NVSwitch'),`${SW.ports} ports`,'','f-sw','sw',sel); sx+=swW+20; } } }
+  if (hostBoard){ const hx=areaX+areaW+18, hw=tw-48-areaW-18, n=r.cpus_per_tray, hh=Math.min(70,(bH-40)/n-10); for (let c=0;c<n;c++){ s += chip(hx+16, bY+26+c*(hh+10), hw-32, hh, C.name.split(' ')[0], C.cores?`${C.cores} cores`:'', '', 'f-cpu','cpu',sel); } }
+  // 5. front zone: drives, BMC, NIC cards, cages, DPUs
+  if (drives){ for (let i=0;i<Math.min(drives,8);i++){ s += hit('drives',sel,rect(tx+24+i*14, ty+th-46, 10, 34, {rx:1,cls:'f-mem ink2 sel-target',style:'stroke-width:.6'})); } s += text(tx+24, ty+th-52, `${drives} × E1.S`, {cls:'t-tb'}); }
+  if (mgmt){ const mxp = tx+24+(drives?Math.min(drives,8)*14+14:0); s += hit('mgmt',sel,rect(mxp, ty+th-36, 22, 16, {rx:2,cls:'f-conn ink sel-target',style:'stroke-width:.8'})); s += text(mxp, ty+th-42, 'BMC', {cls:'t-tb'}); }
+  if (nn){ cardPos.forEach(cx=>{ s += hit('nic',sel,rect(cx-cardW/2, fy, cardW, cardH, {rx:3,cls:'f-nic ink sel-target',style:'stroke-width:.9'}) + text(cx, fy+14, N.name.replace('ConnectX-','CX-').split(' ')[0], {cls:'t-tb-b',anchor:'middle',style:'font-size:11px'}) + text(cx, fy+27, `${N.gbps}G`, {cls:'t-tb',anchor:'middle'})); });
+    for (let c=0;c<cages;c++){ const first=c*portsPerCage, last=Math.min(nn-1,first+portsPerCage-1); const cx=(cardPos[first]+cardPos[last])/2, cwid=Math.max(34, Math.min(70, cardPos[last]-cardPos[first]+40));
+      s += hit('soseg:so_nic',sel, block(cx-cwid/2, cageY, cwid, 18, nicCol, `${so.module_gbps>=1000?so.module_gbps/1000+'T':so.module_gbps+'G'}${cwid>=64?' '+M(so.nic_media).short:''}`, {fs:8}));
+      for (let j=first;j<=last;j++) s += line(cardPos[j], fy+cardH, cardPos[j], cageY, {style:`stroke:${nicCol};stroke-width:1.2`}); } }
+  if (dpuN){ for (let i=0;i<dpuN;i++){ const dx=tx+tw-24-(dpuN-i)*62+8; s += hit('dpu',sel,rect(dx, fy, 54, cardH, {rx:3,cls:'f-dpu ink sel-target',style:'stroke-width:.9'}) + text(dx+27, fy+14, P.name.split(' ')[0].replace('BlueField-','BF-'), {cls:'t-tb-b',anchor:'middle',style:'font-size:11px'}) + text(dx+27, fy+27, `${P.gbps}G`, {cls:'t-tb',anchor:'middle'}));
+      s += hit('soseg:so_dpu',sel, block(dx+7, cageY, 40, 18, dpuCol, `${P.gbps}G`, {fs:8, op:.8})) + line(dx+27, fy+cardH, dx+27, cageY, {style:`stroke:${dpuCol};stroke-width:1.2`}); } }
+
+  // ---- callouts, left
+  const c0=conns[0];
+  s += L(ty+6, [`${r.xpus_per_tray*su.links_per_xpu} × ${su.name} links leave the rear`, `${su.links_per_xpu} per ${xpuShort(b)} · ${M(su.media_xpu_sw).name}`, `blind-mate, no cables in the tray`], suCol, [c0.x, ty+18]);
+  if (liquid) s += L(ty+62, ['Liquid quick-disconnects', 'cold plates on every GPU and CPU'], liqCol, [tx+14, ty+36]);
+  s += L(bY+40, [`${xpb} × ${X.name} per board`, `${nb} board${nb>1?'s':''} per tray · ${X.tdp_w} W each`], 'var(--brand)', [xpuPos[0].x-cw/2, xpuPos[0].top+20]);
+  if (cpb) s += L(rowY+rowH/2, [`${r.cpus_per_tray} × ${C.name} per tray`, `${C.mem} · ${C.c2c}`], '#7A4FB5', [areaX+(boardW-cpuTotal)/2-2, rowY+rowH/2]);
+  else if (hostBoard) s += Rt(bY+bH+18, [`${r.cpus_per_tray} × ${C.name} on a host board`, `${C.mem} · accelerators attach over PCIe`], '#7A4FB5', [tx+tw-24-8, bY+bH-12]);
+  if (nn) s += L(fy-26, [`PCIe ${N.pcie.split(' ')[0]} ${N.pcie.split(' ')[1]||''} GPU → NIC`, `one lane group per GPU: GPU-direct RDMA`], pcieCol, [cardPos[0]-cardW/2, fy+6]);
+  if (drives) s += L(ty+th-14, [`${drives} × E1.S NVMe · BMC 1 GbE`, 'local storage and out-of-band management'], 'var(--ink-3)', [tx+24, ty+th-30]);
+  // ---- callouts, right
+  s += Rt(ty+48, ['48 V DC busbar clip', `≈ ${fmt((r.xpus_per_tray*X.tdp_w + r.cpus_per_tray*C.tdp_w + nn*N.tdp_w + dpuN*P.tdp_w)/1000,1)} kW silicon per tray`], pwrCol, [tx+tw-10, ty+40]);
+  if (cages) s += Rt(fy+cardH+34, [`${nn} × ${N.name} in ${cages} × ${so.module_gbps}G ${M(so.nic_media).short} cage${cages>1?'s':''}`, `${M(so.nic_media).name} · ${fmt(nn*N.gbps/1000,1)} Tb/s per tray`], nicCol, [tx+tw-24-(dpuN?dpuN*62+16:0)+2, cageY+9]);
+  if (dpuN) s += Rt(fy-4, [`${dpuN} × ${P.name} ${P.gbps}G`, 'front-end / storage · PCIe from the host'], dpuCol, [tx+tw-24-8, fy+10]);
+  // per-tray figures (right margin, between the callouts)
+  const sx=tx+tw+40; let sy=ty+96;
+  [['SCALE-UP OUT OF TRAY', `${fmt(r.xpus_per_tray*o.link.xpu_tbs_bidir,1)} TB/s · ${fmt(r.xpus_per_tray*o.link.xpu_lanes)} lanes/dir`],['SCALE-OUT OUT OF TRAY', `${fmt(nn*N.gbps/1000,1)} Tb/s · ${cages} cages`],['TRAY POWER (SILICON)', `${fmt((r.xpus_per_tray*X.tdp_w + r.cpus_per_tray*C.tdp_w + nn*N.tdp_w + dpuN*P.tdp_w)/1000,1)} kW`],['HBM PER TRAY', `${fmt(r.xpus_per_tray*X.hbm_gb/1000,2)} TB · ${fmt(r.xpus_per_tray*X.hbm_tbs)} TB/s`]].forEach(([k,v])=>{ s += text(sx,sy,k,{cls:'t-eyebrow'})+text(sx,sy+15,v,{cls:'t-label'}); sy+=38; });
+
+  /* ---------------- switch tray ---------------- */
+  if (hasSw){
+    const sy0=ty+th+100, sh=240, k=r.switch_chips_per_tray, ports=SW.ports;
+    s += text(tx, sy0-16, `SWITCH TRAY · PLAN VIEW · ×${r.switch_trays} PER RACK · ${k} × ${SW.name.toUpperCase()}`, {cls:'t-eyebrow'});
+    s += hit('tray:switch', sel, rect(tx,sy0,tw,sh,{rx:5,cls:'f-tray ink sel-target',style:'stroke-width:1.6'}));
+    s += text(tx+tw+8, sy0+14, 'REAR', {cls:'t-eyebrow'}) + text(tx+tw+8, sy0+sh-4, 'FRONT', {cls:'t-eyebrow'});
+    s += rect(tx+tw-22, sy0+8, 12, 64, {rx:2,style:`fill:${pwrCol};fill-opacity:.9`}) + text(tx+tw-16, sy0+40, '48 V', {cls:'t-tb',anchor:'middle',style:'fill:#fff;font-weight:600;font-size:8px',extra:`transform="rotate(-90 ${tx+tw-16} ${sy0+40})"`});
+    if (liquid){ [0,1].forEach(i=>{ s += `<circle cx="${tx+14}" cy="${sy0+18+i*18}" r="6" style="fill:${liqCol};fill-opacity:.9"/><circle cx="${tx+14}" cy="${sy0+18+i*18}" r="2.5" class="f-sheet"/>`; }); }
+    const chipW=Math.min(220,(tw-200-(k-1)*50)/k), chipH=86, chipY=sy0+110; let cx=tx+(tw-(k*chipW+(k-1)*50))/2-10;
+    for (let j=0;j<k;j++){
+      const segW=Math.min(chipW+60, (tw-60)/k-30), segX=cx+chipW/2-segW/2;
+      s += hit('seg:'+(o.segments[0]?.id||'xpu_sw'), sel, rect(segX, sy0+8, segW, 20, {rx:2,cls:'sel-target',style:`fill:${suCol};stroke:${suCol}`}) + text(segX+segW/2, sy0+22, `${ports} × ${su.name} ports · blind-mate`, {cls:'t-tb',anchor:'middle',style:'fill:#fff;font-weight:600'}));
+      // fan-in bundle from chip to connector
+      s += `<polygon points="${cx+14},${chipY} ${cx+chipW-14},${chipY} ${segX+segW-8},${sy0+28} ${segX+8},${sy0+28}" style="fill:${suCol};fill-opacity:.16;stroke:${suCol};stroke-width:.8"/>`;
+      for (let t=0;t<9;t++){ const f=(t+.5)/9; s += line(cx+14+f*(chipW-28), chipY, segX+8+f*(segW-16), sy0+28, {style:`stroke:${suCol};stroke-width:.8;opacity:.5`}); }
+      s += text(cx+chipW/2, sy0+72, `${ports} ports × ${su.lanes_per_link} lanes × ${su.lane_gbps}G = ${fmt(SW.tbs_bidir,1)} TB/s`, {cls:'t-mono',anchor:'middle'});
+      s += chip(cx, chipY, chipW, chipH, SW.name.split(' (')[0], `${ports} × ${fmt(o.link.link_gbps_dir)}G ports`, `${SW.tdp_w} W`, 'f-sw', 'sw', sel);
+      cx += chipW+50;
     }
-    s += callout(tx + (tw - (k*swW + (k-1)*30))/2 + 10, sy0+8, tx-40, sy0-24, [`${k*ports} ${su.name} ports per tray → ${M(su.media_xpu_sw).name}`, `${fmt(o.topo.ports_avail)} ports in rack vs ${fmt(o.topo.links)} XPU links (${fmt(o.topo.util*100,0)}% used)`], suCol, 'end');
-    if (M(su.media_tray_tray).family==='optical' || su.topology==='intray'){}
-    s += block(tx+tw-120, sy0+8, 90, 14, D.CONNECTOR_CATS.power.color, '48 V / busbar', {fs:8});
-    s += text(tx+tw/2, sy0+sh-12, `No optics on the switch tray: the whole scale-up domain is one rack of ${o.n.xpus} XPUs on ${M(su.media_xpu_sw).name.toLowerCase()}.`, {cls:'t-small',anchor:'middle'});
-    if (M(su.media_xpu_sw).family==='optical') s = s.replace('No optics on the switch tray', 'Optical scale-up');
+    if (mgmt){ s += hit('mgmt',sel,rect(tx+24, sy0+sh-36, 22, 16, {rx:2,cls:'f-conn ink sel-target',style:'stroke-width:.8'})); s += text(tx+24, sy0+sh-42, 'BMC', {cls:'t-tb'}); }
+    s += text(tx+tw/2, sy0+sh-14, M(su.media_xpu_sw).family==='optical' ? `Optical scale-up: ${fmt(k*ports)} ports of ${M(su.media_xpu_sw).name} per tray.` : `No front-panel data ports: every ${su.name} port enters through the rear ${M(su.media_xpu_sw).name.toLowerCase()}.`, {cls:'t-small',anchor:'middle'});
+    s += callout(tx+(tw-(k*chipW+(k-1)*50))/2+chipW/2-Math.min(chipW+60, tw/k-30)/2+10, sy0+18, tx-34, sy0+6, [`${fmt(k*ports)} ports per switch tray`, `${fmt(o.topo.ports_avail)} in rack for ${fmt(o.topo.links)} XPU links → ${fmt(o.topo.util*100,0)}% used`, `each ${xpuShort(b)} reaches every switch ASIC (${fmt(o.topo.links_per_xpu_per_switch,2)} link${o.topo.links_per_xpu_per_switch===1?'':'s'})`], suCol, 'end');
+    s += callout(tx+(tw-(k*chipW+(k-1)*50))/2-10+8, chipY+10, tx-34, chipY-22, [`${SW.name}`, `${SW.serdes?SW.serdes+' × '+SW.serdes_gbps+'G SerDes · ':''}${fmt(SW.tbs_bidir,1)} TB/s bidir · ${SW.tdp_w} W`], '#B26A2B', 'end');
+    const ssx=tx+tw+40; let ssy=sy0+60;
+    [['PER SWITCH TRAY', `${fmt(k*SW.tbs_bidir,1)} TB/s · ${fmt(k*SW.tdp_w/1000,2)} kW`],['RACK SWITCHING', `${o.n.sw_chips} ASICs · ${fmt(o.n.sw_chips*SW.tbs_bidir,0)} TB/s`],['SPINE MEDIA', `${M(su.media_xpu_sw).name}`]].forEach(([kk,v])=>{ s += text(ssx,ssy,kk,{cls:'t-eyebrow'})+text(ssx,ssy+15,v,{cls:'t-label'}); ssy+=38; });
   } else {
-    s += text(tx, ty+th+100, `No switch tray: ${D.TOPOLOGIES[su.topology].name}. ${D.TOPOLOGIES[su.topology].desc}`, {cls:'t-small'});
+    s += text(tx, ty+th+70, `No switch tray: ${D.TOPOLOGIES[su.topology].name}.`, {cls:'t-label'});
+    s += text(tx, ty+th+88, D.TOPOLOGIES[su.topology].desc, {cls:'t-small'});
   }
-  s += mediaLegend(28, H-16-58-16*3-40, [su.media_xpu_sw, so.nic_media, so.dpu_media].filter(Boolean));
+  s += mediaLegend(28, H-16-58-16*4-40, [su.media_xpu_sw, so.nic_media, so.dpu_media].filter(Boolean));
+  const lgY = H-16-58-16*4-40+16*4+20; s += text(28, lgY, 'Trace colours', {cls:'t-eyebrow'}) + line(28,lgY+14,54,lgY+14,{style:`stroke:${pcieCol};stroke-width:2`}) + text(62,lgY+18,'PCIe host / NIC path',{cls:'t-small'}) + line(28,lgY+30,54,lgY+30,{style:`stroke:${c2cCol};stroke-width:2`}) + text(62,lgY+34,'CPU ↔ GPU C2C',{cls:'t-small'});
   return sheet(W,H,ctx,s);
 }
 
