@@ -1695,7 +1695,14 @@ function importJSON(txt){
     loadPreset(b.id);
   } catch(err){ alert('Could not load that JSON: ' + err.message); }
 }
-function download(name, content, type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500); }
+/* Saves a generated file. Inside the claude.ai artifact viewer plain download links are inert, so use the
+   `downloads` capability when it resolves; anywhere else (repo build, local file) fall back to an anchor. */
+const downloadsCap = (window.claude && typeof window.claude.use === 'function') ? window.claude.use('downloads').catch(()=>null) : Promise.resolve(null);
+async function download(name, content, type){
+  const cap = await downloadsCap;
+  if (cap){ try { await cap.save({ filename:name, data:content }); } catch(err){ if (err && err.code !== 'declined') alert('Could not save the file here: ' + (err.message || err.code || err)); } return; }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500);
+}
 function saveSVG(){
   const svg = $('#canvas svg'); if (!svg) return;
   const cs = getComputedStyle(document.documentElement);
