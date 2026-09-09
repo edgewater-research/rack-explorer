@@ -1,0 +1,1722 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rack Explorer</title>
+<meta name="description" content="Interactive AI rack network explorer: scale-up and scale-out architectures (NVL72, Vera Rubin, Trainium, TPU, Helios) with editable chip counts, lane rates, link counts and media assumptions.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Rack Explorer — Edgewater Research house style: engineering drawing sheet on grid paper. */
+:root{
+  --paper:#F1F4F7; --sheet:#FFFFFF; --panel:#FAFBFC;
+  --ink:#101A28; --ink-2:#465264; --ink-3:#7F8A9C; --rule:#D3DAE3; --rule-2:#E6EBF0;
+  --brand:#1E4E8C; --brand-tint:#E4EDF8; --brand-ink:#163A6B;
+  --select:#E0A106; --select-tint:#FFF5D6;
+  --good:#2E8B57; --warn:#C97B12; --bad:#C0392B; --info:#1E4E8C;
+  --f-xpu:#DCE8F7; --f-cpu:#E6E1F4; --f-mem:#EEF1F5; --f-nic:#DCEFE7; --f-sw:#F6E4D4; --f-dpu:#E4EFD7; --f-pwr:#FBF0CC; --f-conn:#FFFFFF; --f-tray:#F7F9FB; --f-rack:#EDF1F5;
+  --grid:rgba(30,78,140,.07);
+  --ui:'Barlow',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --disp:'Barlow Condensed','Barlow',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --shadow:0 1px 2px rgba(16,26,40,.06),0 8px 24px rgba(16,26,40,.06);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --paper:#0E1319; --sheet:#151B24; --panel:#121820;
+  --ink:#E7ECF3; --ink-2:#AEB8C7; --ink-3:#7D889B; --rule:#2B3542; --rule-2:#202934;
+  --brand:#7FB0EE; --brand-tint:#1A2A40; --brand-ink:#A9CBF5;
+  --select:#F0B429; --select-tint:#3A2E10;
+  --good:#4FB37A; --warn:#E39A3B; --bad:#E06A5E; --info:#7FB0EE;
+  --f-xpu:#22385A; --f-cpu:#34305A; --f-mem:#242D38; --f-nic:#1F3B32; --f-sw:#4A3320; --f-dpu:#2E3F22; --f-pwr:#4A3D14; --f-conn:#1B2330; --f-tray:#1A212B; --f-rack:#141B24;
+  --grid:rgba(127,176,238,.07);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --paper:#0E1319; --sheet:#151B24; --panel:#121820;
+  --ink:#E7ECF3; --ink-2:#AEB8C7; --ink-3:#7D889B; --rule:#2B3542; --rule-2:#202934;
+  --brand:#7FB0EE; --brand-tint:#1A2A40; --brand-ink:#A9CBF5;
+  --select:#F0B429; --select-tint:#3A2E10;
+  --good:#4FB37A; --warn:#E39A3B; --bad:#E06A5E; --info:#7FB0EE;
+  --f-xpu:#22385A; --f-cpu:#34305A; --f-mem:#242D38; --f-nic:#1F3B32; --f-sw:#4A3320; --f-dpu:#2E3F22; --f-pwr:#4A3D14; --f-conn:#1B2330; --f-tray:#1A212B; --f-rack:#141B24;
+  --grid:rgba(127,176,238,.07);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.45 var(--ui);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--select);outline-offset:2px}
+a{color:var(--brand)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* ---------- App frame ---------- */
+#app{display:grid;grid-template-rows:auto 1fr;height:100vh;min-height:0}
+header.top{display:flex;align-items:center;gap:16px;padding:0 16px;height:52px;background:var(--sheet);border-bottom:1px solid var(--rule)}
+.wordmark{display:flex;flex-direction:column;line-height:1;min-width:150px}
+.wordmark .eyebrow{font:600 10px/1 var(--ui);letter-spacing:.12em;text-transform:uppercase;color:var(--brand)}
+.wordmark .name{font:600 20px/1.05 var(--disp);letter-spacing:.01em;margin-top:3px}
+.top .spacer{flex:1}
+.tabs{display:flex;gap:2px;background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:2px}
+.tabs button{border:0;background:transparent;padding:6px 12px;border-radius:6px;font:500 13px var(--ui);color:var(--ink-2)}
+.tabs button[aria-selected="true"]{background:var(--sheet);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.tabs button:hover{color:var(--ink)}
+.btn{border:1px solid var(--rule);background:var(--sheet);border-radius:6px;padding:6px 10px;font:500 13px var(--ui);color:var(--ink-2);display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--ink-3);color:var(--ink)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.small{padding:3px 8px;font-size:12px}
+.btn.icon{padding:6px 8px}
+select.ctl,input.ctl{border:1px solid var(--rule);background:var(--sheet);border-radius:6px;padding:6px 8px;font:500 13px var(--ui);color:var(--ink);max-width:100%}
+
+main.work{display:grid;grid-template-columns:272px minmax(0,1fr) 392px;min-height:0;height:100%}
+@media (max-width:1180px){ main.work{grid-template-columns:232px minmax(0,1fr) 340px} }
+@media (max-width:900px){ main.work{grid-template-columns:1fr;grid-template-rows:auto auto auto;overflow:auto;height:auto} #app{height:auto;min-height:100vh} aside.rail,aside.side{max-height:none} }
+
+/* ---------- Left rail: library ---------- */
+aside.rail{border-right:1px solid var(--rule);background:var(--panel);overflow:auto;min-height:0}
+.rail h3,.side h3{font:600 11px/1 var(--ui);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:0;padding:14px 14px 8px}
+.preset-list{display:flex;flex-direction:column;gap:6px;padding:0 10px 10px}
+.preset{position:relative;text-align:left;border:1px solid var(--rule);background:var(--sheet);border-radius:8px;padding:9px 10px 9px 12px;display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:start}
+.preset:hover{border-color:var(--ink-3)}
+.preset[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-tint)}
+.preset .pn{font:600 14px/1.2 var(--disp);color:var(--ink)}
+.preset .pv{font:500 11px var(--ui);color:var(--ink-3);grid-column:1;letter-spacing:.02em}
+.preset .pt{grid-column:1/-1;font:400 12px/1.35 var(--ui);color:var(--ink-2);margin-top:3px}
+.preset .del{grid-column:2;grid-row:1;border:0;background:transparent;color:var(--ink-3);padding:0 2px;font-size:14px;line-height:1}
+.preset .del:hover{color:var(--bad)}
+.pill{display:inline-block;font:600 10px/1 var(--mono);letter-spacing:.04em;padding:3px 5px;border-radius:4px;border:1px solid var(--rule);color:var(--ink-2);white-space:nowrap}
+.pill.H{border-color:var(--good);color:var(--good)} .pill.M{border-color:var(--warn);color:var(--warn)} .pill.L{border-color:var(--bad);color:var(--bad)}
+.blocks{padding:0 10px 14px;display:flex;flex-direction:column;gap:8px}
+.blockgrp summary{cursor:pointer;font:600 12px var(--ui);color:var(--ink-2);padding:6px 4px;list-style:none;display:flex;justify-content:space-between}
+.blockgrp summary::-webkit-details-marker{display:none}
+.blockgrp summary::after{content:'+';color:var(--ink-3);font-family:var(--mono)} .blockgrp[open] summary::after{content:'−'}
+.block{display:grid;grid-template-columns:8px 1fr auto;gap:0 8px;align-items:center;padding:6px 6px 6px 4px;border-radius:6px;border:1px solid transparent;cursor:pointer;text-align:left;background:transparent;width:100%}
+.block:hover{background:var(--sheet);border-color:var(--rule)}
+.block[aria-pressed="true"]{background:var(--brand-tint);border-color:var(--brand)}
+.block .sw{width:8px;height:24px;border-radius:2px}
+.block .bn{font:500 13px/1.2 var(--ui);color:var(--ink)}
+.block .bs{font:400 11px/1.3 var(--mono);color:var(--ink-3)}
+.block .use{font:600 10px var(--ui);color:var(--brand);border:1px solid var(--brand);border-radius:4px;padding:2px 5px;letter-spacing:.06em;text-transform:uppercase;opacity:0}
+.block:hover .use{opacity:1}
+.media-legend{padding:0 14px 16px;display:grid;gap:6px}
+.media-row{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;font-size:12px;color:var(--ink-2)}
+.media-row .line{height:0;border-top:3px solid;border-radius:2px}
+.media-row .line.optical{border-top-style:dashed}
+.media-row .fam{font:500 10px var(--mono);color:var(--ink-3);letter-spacing:.04em}
+
+/* ---------- Center: drawing ---------- */
+section.center{display:grid;grid-template-rows:auto auto minmax(0,1fr);min-height:0;background:var(--paper)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--rule);border-bottom:1px solid var(--rule)}
+.stat{background:var(--sheet);padding:9px 12px 8px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat .k{font:600 10px/1.1 var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat .v{font:500 21px/1.1 var(--disp);color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat .v small{font:500 12px var(--ui);color:var(--ink-2);margin-left:3px}
+.stat .s{font:400 11px/1.3 var(--ui);color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat.good .v{color:var(--good)} .stat.warn .v{color:var(--warn)} .stat.bad .v{color:var(--bad)}
+.notices{display:flex;flex-direction:column;gap:0;border-bottom:1px solid var(--rule);background:var(--sheet);max-height:112px;overflow:auto}
+.notices:empty{display:none}
+.notice{display:flex;gap:10px;align-items:flex-start;padding:6px 14px;font-size:12.5px;color:var(--ink-2);border-left:3px solid var(--rule)}
+.notice+.notice{border-top:1px solid var(--rule-2)}
+.notice.err{border-left-color:var(--bad)} .notice.warn{border-left-color:var(--warn)} .notice.info{border-left-color:var(--info)}
+.notice b{font:600 10px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding-top:3px;min-width:34px}
+.notice.err b{color:var(--bad)} .notice.warn b{color:var(--warn)} .notice.info b{color:var(--info)}
+.canvas-wrap{position:relative;overflow:auto;min-height:0;background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.canvas-tools{position:sticky;top:10px;float:right;margin-right:12px;display:flex;gap:4px;z-index:2}
+.canvas-tools .btn{background:var(--sheet)}
+#canvas{display:block;margin:14px auto 28px;width:calc(100% - 28px);max-width:1400px;height:auto;transform-origin:top center}
+#canvas svg{display:block;width:100%;height:auto;background:var(--sheet);border:1px solid var(--rule);box-shadow:var(--shadow)}
+
+/* SVG drawing vocabulary */
+svg text{font-family:var(--ui);fill:var(--ink);font-size:12px}
+svg .t-title{font:600 22px var(--disp);letter-spacing:.01em}
+svg .t-sub{font:500 12px var(--ui);fill:var(--ink-2)}
+svg .t-label{font:500 12px var(--ui);fill:var(--ink)}
+svg .t-small{font:400 11px var(--ui);fill:var(--ink-2)}
+svg .t-eyebrow{font:600 9.5px var(--ui);letter-spacing:.12em;text-transform:uppercase;fill:var(--ink-3)}
+svg .t-mono{font:500 11px var(--mono);fill:var(--ink-2)}
+svg .t-chip{font:600 13px var(--disp);letter-spacing:.02em;fill:var(--ink)}
+svg .t-chip-s{font:500 10px var(--mono);fill:var(--ink-2)}
+svg .t-tb{font:500 10px var(--mono);fill:var(--ink-2)}
+svg .t-tb-b{font:600 12px var(--disp);fill:var(--ink)}
+svg .ink{stroke:var(--ink)} svg .ink2{stroke:var(--ink-2)} svg .rule{stroke:var(--rule)} svg .rule2{stroke:var(--rule-2)}
+svg .f-sheet{fill:var(--sheet)} svg .f-panel{fill:var(--panel)} svg .f-xpu{fill:var(--f-xpu)} svg .f-cpu{fill:var(--f-cpu)} svg .f-mem{fill:var(--f-mem)}
+svg .f-nic{fill:var(--f-nic)} svg .f-sw{fill:var(--f-sw)} svg .f-dpu{fill:var(--f-dpu)} svg .f-pwr{fill:var(--f-pwr)} svg .f-conn{fill:var(--f-conn)} svg .f-tray{fill:var(--f-tray)} svg .f-rack{fill:var(--f-rack)}
+svg .f-none{fill:none}
+svg .hit{cursor:pointer}
+svg .hit:hover .sel-target{stroke:var(--brand);stroke-width:2}
+svg .selected .sel-target{stroke:var(--select) !important;stroke-width:2.5 !important}
+svg .selected .sel-glow{fill:var(--select-tint)}
+svg .leader{stroke:var(--ink-2);stroke-width:1;fill:none}
+svg .dim{stroke:var(--ink-3);stroke-width:1;fill:none}
+svg .hatch{fill:url(#hatch)}
+
+/* ---------- Right panel ---------- */
+aside.side{border-left:1px solid var(--rule);background:var(--panel);display:grid;grid-template-rows:auto minmax(0,1fr);min-height:0}
+.side-tabs{display:flex;border-bottom:1px solid var(--rule);background:var(--sheet)}
+.side-tabs button{flex:1;border:0;background:transparent;padding:11px 4px 9px;font:600 12px var(--ui);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);border-bottom:2px solid transparent}
+.side-tabs button[aria-selected="true"]{color:var(--brand);border-bottom-color:var(--brand)}
+.side-body{overflow:auto;min-height:0;padding:0 0 24px}
+.panel-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:14px 14px 4px}
+.panel-h h2{font:600 18px/1.15 var(--disp);margin:0}
+.panel-h .sub{font:400 12px var(--ui);color:var(--ink-3)}
+.sec{padding:8px 14px 4px}
+.sec h4{font:600 10.5px var(--ui);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:8px 0 6px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:3px 12px;font-size:12.5px}
+.kv .k{color:var(--ink-2)} .kv .v{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;color:var(--ink)}
+.kv .v.dim{color:var(--ink-3)}
+.formula{font:500 12px/1.5 var(--mono);color:var(--ink);background:var(--sheet);border:1px solid var(--rule);border-left:3px solid var(--brand);border-radius:4px;padding:8px 10px;margin:6px 0;white-space:normal;word-break:break-word}
+.form{display:grid;grid-template-columns:1fr 112px;gap:6px 10px;align-items:center;font-size:12.5px}
+.form label{color:var(--ink-2)}
+.form label small{display:block;color:var(--ink-3);font-size:11px}
+.form input,.form select{width:100%;border:1px solid var(--rule);background:var(--sheet);border-radius:5px;padding:4px 7px;font:500 12.5px var(--mono);color:var(--ink)}
+.form select{font-family:var(--ui)}
+.form input:focus,.form select:focus{border-color:var(--brand);outline:none}
+.form .wide{grid-column:1/-1}
+.form input.changed{border-color:var(--select);background:var(--select-tint)}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.note{font-size:12px;color:var(--ink-2);line-height:1.45}
+.note.small{font-size:11.5px;color:var(--ink-3)}
+.srcs{margin:4px 0 0;padding-left:16px;font-size:11.5px;color:var(--ink-2);line-height:1.45}
+.srcs li{margin:2px 0}
+table.grid{width:100%;border-collapse:collapse;font-size:12px}
+table.grid th{font:600 10px var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:6px 6px 4px;border-bottom:1px solid var(--rule)}
+table.grid td{padding:5px 6px;border-bottom:1px solid var(--rule-2);vertical-align:top}
+table.grid td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+table.grid td.c{color:var(--ink-3);font-size:11px}
+table.grid tr.cat td{font:600 10.5px var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--brand);padding-top:10px;border-bottom:1px solid var(--rule)}
+.asm-group{padding:6px 14px 2px}
+.asm-group h4{font:600 10.5px var(--ui);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:8px 0 4px;display:flex;justify-content:space-between}
+.asm{display:grid;grid-template-columns:1fr 78px 20px;gap:2px 8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--rule-2);font-size:12.5px}
+.asm .l{color:var(--ink);display:flex;gap:6px;align-items:center;min-width:0}
+.asm .l span.mk{width:8px;height:8px;border-radius:2px;flex:none}
+.asm .l .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.asm .u{grid-column:1;font:400 11px var(--mono);color:var(--ink-3);margin-left:14px}
+.asm input,.asm select{width:100%;border:1px solid var(--rule);background:var(--sheet);border-radius:4px;padding:3px 6px;font:500 12px var(--mono);color:var(--ink);text-align:right}
+.asm select{text-align:left;font-family:var(--ui);font-size:11.5px}
+.asm input.changed{border-color:var(--select);background:var(--select-tint)}
+.asm .i{color:var(--ink-3);cursor:help;font:600 11px var(--mono);text-align:center;border:1px solid var(--rule);border-radius:50%;width:16px;height:16px;line-height:14px}
+.asm .i:hover{color:var(--brand);border-color:var(--brand)}
+.tools{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px}
+.hint{padding:6px 14px;font-size:11.5px;color:var(--ink-3)}
+.conn-list{display:grid;gap:4px}
+.conn-item{display:grid;grid-template-columns:1fr 64px 76px 22px;gap:4px;align-items:center}
+.conn-item input,.conn-item select{border:1px solid var(--rule);background:var(--sheet);border-radius:4px;padding:3px 6px;font:400 12px var(--ui);color:var(--ink);min-width:0}
+.conn-item button{border:0;background:transparent;color:var(--ink-3)} .conn-item button:hover{color:var(--bad)}
+.empty{padding:20px 14px;color:var(--ink-3);font-size:12.5px}
+textarea.io{width:calc(100% - 28px);margin:6px 14px;height:120px;border:1px solid var(--rule);background:var(--sheet);border-radius:6px;font:11px/1.4 var(--mono);color:var(--ink);padding:8px}
+.cmp-wrap{padding:0 14px}
+@media (prefers-reduced-motion:no-preference){ .preset,.block,.btn{transition:border-color .12s,background-color .12s} }
+
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="wordmark"><span class="eyebrow">Edgewater Research</span><span class="name">Rack Explorer</span></div>
+    <select id="preset-select" class="ctl" aria-label="Rack architecture"></select>
+    <div class="tabs" role="tablist" id="view-tabs">
+      <button role="tab" data-view="board">Board</button>
+      <button role="tab" data-view="tray">Tray</button>
+      <button role="tab" data-view="rack">Rack</button>
+      <button role="tab" data-view="scaleup">Scale-up fabric</button>
+      <button role="tab" data-view="scaleout">Scale-out</button>
+      <button role="tab" data-view="compare">Compare</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" id="btn-export" title="Download the current build and assumptions as JSON">Export JSON</button>
+    <button class="btn" id="btn-import" title="Load a build from a JSON file">Import</button>
+    <input type="file" id="file-import" accept="application/json" hidden>
+    <button class="btn" id="btn-svg" title="Download the current drawing as SVG">Save SVG</button>
+    <button class="btn icon" id="btn-theme" title="Toggle light / dark">◐</button>
+  </header>
+  <main class="work">
+    <aside class="rail" aria-label="Library">
+      <h3>Rack architectures</h3>
+      <div class="preset-list" id="preset-list"></div>
+      <h3>Building blocks</h3>
+      <div class="blocks" id="blocks"></div>
+      <h3>Interconnect media</h3>
+      <div class="media-legend" id="media-legend"></div>
+    </aside>
+    <section class="center">
+      <div class="stats" id="stats"></div>
+      <div class="notices" id="notices"></div>
+      <div class="canvas-wrap" id="canvas-wrap">
+        <div class="canvas-tools">
+          <button class="btn small" id="zoom-out" title="Zoom out">−</button>
+          <button class="btn small" id="zoom-fit" title="Fit">Fit</button>
+          <button class="btn small" id="zoom-in" title="Zoom in">+</button>
+        </div>
+        <div id="canvas"></div>
+      </div>
+    </section>
+    <aside class="side" aria-label="Details">
+      <div class="side-tabs" role="tablist" id="side-tabs">
+        <button role="tab" data-tab="inspect">Inspector</button>
+        <button role="tab" data-tab="build">Build</button>
+        <button role="tab" data-tab="assume">Assumptions</button>
+        <button role="tab" data-tab="bom">Bill of interconnect</button>
+      </div>
+      <div class="side-body" id="side-body"></div>
+    </aside>
+  </main>
+</div>
+<script>
+/* Rack Explorer — data layer
+   Media types, building blocks (GPU/XPU, CPU, NIC, DPU, switches), rack presets,
+   and default assumptions. Every figure here is a default that the UI can override.
+   Confidence: H = vendor-documented and widely corroborated, M = vendor-stated but
+   ambiguous or partially disclosed, L = estimate / placeholder chosen to reproduce a
+   vendor aggregate. */
+
+const MEDIA = {
+  pcb:       { id:'pcb',       name:'On-board PCB trace',          short:'PCB',        family:'copper',  color:'#7B6A58', reach_m:0.4,  w_end:0,    usd_end:5,    conf:'H',
+               note:'Baseboard traces (e.g. HGX NVSwitch baseboard). SerDes power is inside the ASICs.' },
+  backplane: { id:'backplane', name:'Copper backplane / cartridge',short:'Backplane',  family:'copper',  color:'#B26A2B', reach_m:1.5,  w_end:0,    usd_end:35,   conf:'M',
+               note:'Blind-mate copper cartridge / cable backplane inside the rack (NVL72 NVLink spine ≈ 5,000 twinax pairs).' },
+  dac:       { id:'dac',       name:'DAC (passive copper)',        short:'DAC',        family:'copper',  color:'#4A5D73', reach_m:1.5,    w_end:0,    usd_end:120,  conf:'H',
+               note:'Passive twinax. Reach falls with lane rate: ~2 m at 100G/lane, ~1–1.5 m at 200G/lane.' },
+  acc:       { id:'acc',       name:'ACC (linear active copper)',  short:'ACC',        family:'copper',  color:'#2F8F83', reach_m:3,    w_end:0.6,  usd_end:220,  conf:'M',
+               note:'Linear amplifier in the plug, no retimer. Host SerDes still closes the link.' },
+  aec:       { id:'aec',       name:'AEC (retimed active copper)', short:'AEC',        family:'copper',  color:'#7A4FB5', reach_m:7,    w_end:4,    usd_end:400,  conf:'M',
+               note:'Retimer/DSP in each plug. ~7–8 W per 800G cable. Rack-to-rack and rack-scale copper reach extender.' },
+  pluggable: { id:'pluggable', name:'Pluggable optics (DSP)',      short:'Pluggable',  family:'optical', color:'#E07A1F', reach_m:500,  w_end:15,   usd_end:1000, conf:'H',
+               note:'OSFP / QSFP-DD with DSP. 800G DR8 ≈ 14–16 W, 1.6T DR8 ≈ 25–30 W.' },
+  lpo:       { id:'lpo',       name:'LPO (linear pluggable optics)',short:'LPO',       family:'optical', color:'#C9A227', reach_m:500,  w_end:8.5,  usd_end:750,  conf:'M',
+               note:'No DSP in the module; relies on host SerDes. ~40–50% lower power than DSP pluggables.' },
+  cpo:       { id:'cpo',       name:'CPO / NPO (co-packaged optics)',short:'CPO',      family:'optical', color:'#C2308C', reach_m:500,  w_end:5.5,  usd_end:600,  conf:'L',
+               note:'Optical engine on the switch/XPU package, external laser source. NVIDIA claims ~3.5× power efficiency vs pluggables.' },
+  ocs:       { id:'ocs',       name:'Optical circuit switch (via pluggables)', short:'OCS', family:'optical', color:'#1F8A4C', reach_m:500, w_end:15, usd_end:1400, conf:'M',
+               note:'MEMS mirror switch (Google Palomar/Apollo). Passive; transceivers on each end carry the cost/power.' },
+};
+
+const MEDIA_ORDER = ['pcb','backplane','dac','acc','aec','pluggable','lpo','cpo','ocs'];
+
+/* ---------------- Building blocks ---------------- */
+
+const XPUS = {
+  b200:   { id:'b200',   vendor:'NVIDIA', name:'B200 (Blackwell)',            dies:2, hbm_gb:192, hbm_tbs:8,    fp8_pf:4.5,  fp4_pf:9,    tdp_w:1200, conf:'H',
+            pcie:'PCIe Gen6 x16', c2c:'NVLink-C2C 900 GB/s to Grace', note:'GB200 configuration TDP. 1.8 TB/s NVLink 5.' },
+  b300:   { id:'b300',   vendor:'NVIDIA', name:'B300 (Blackwell Ultra)',      dies:2, hbm_gb:288, hbm_tbs:8,    fp8_pf:4.5,  fp4_pf:15,   tdp_w:1400, conf:'H',
+            pcie:'PCIe Gen6 x16', c2c:'NVLink-C2C 900 GB/s', note:'GB300 NVL72 configuration. Same 1.8 TB/s NVLink 5 port.' },
+  rubin:  { id:'rubin',  vendor:'NVIDIA', name:'Rubin (2-die package)',       dies:2, hbm_gb:288, hbm_tbs:13,   fp8_pf:8.3,  fp4_pf:50,   tdp_w:1800, conf:'M',
+            pcie:'PCIe Gen6 x16', c2c:'NVLink-C2C 1.8 TB/s to Vera', note:'2H26. FP4 50 PF inference per package per GTC 2025. TDP is an estimate.' },
+  rubinu: { id:'rubinu', vendor:'NVIDIA', name:'Rubin Ultra (4-die package)', dies:4, hbm_gb:1024,hbm_tbs:32,   fp8_pf:35,   fp4_pf:100,  tdp_w:3600, conf:'L',
+            pcie:'PCIe Gen7 x16 (est.)', c2c:'NVLink-C2C', note:'2027 Kyber rack. HBM4e 1 TB per package. Most figures are placeholders.' },
+  trn2:   { id:'trn2',   vendor:'AWS',    name:'Trainium2',                    dies:2, hbm_gb:96,  hbm_tbs:2.9,  fp8_pf:1.3,  fp4_pf:null, tdp_w:500,  conf:'M',
+            pcie:'PCIe Gen5 x16', c2c:'—', note:'FP8 dense 1.3 PF. TDP is an estimate.' },
+  trn3:   { id:'trn3',   vendor:'AWS',    name:'Trainium3',                    dies:2, hbm_gb:144, hbm_tbs:4.9,  fp8_pf:2.52, fp4_pf:null, tdp_w:800,  conf:'L',
+            pcie:'PCIe Gen5 x16', c2c:'—', note:'3 nm, announced Dec 2025. TDP is an estimate.' },
+  tpuv7:  { id:'tpuv7',  vendor:'Google', name:'TPU v7 (Ironwood)',            dies:2, hbm_gb:192, hbm_tbs:7.37, fp8_pf:4.6,  fp4_pf:null, tdp_w:1000, conf:'M',
+            pcie:'PCIe Gen5 x16', c2c:'—', note:'4.6 PF FP8 per chip; 9.6 Tb/s ICI. TDP is an estimate.' },
+  mi355x: { id:'mi355x', vendor:'AMD',    name:'MI355X (CDNA 4)',              dies:8, hbm_gb:288, hbm_tbs:8,    fp8_pf:5,    fp4_pf:10,   tdp_w:1400, conf:'H',
+            pcie:'PCIe Gen5 x16', c2c:'—', note:'8-GPU Infinity Fabric mesh in UBB, no scale-up switch.' },
+  mi450:  { id:'mi450',  vendor:'AMD',    name:'MI450 (CDNA 5, Helios)',       dies:8, hbm_gb:432, hbm_tbs:19.6, fp8_pf:20,   fp4_pf:40,   tdp_w:1800, conf:'L',
+            pcie:'PCIe Gen6 x16', c2c:'—', note:'2H26 Helios rack. 3.6 TB/s UALink per GPU per AMD. TDP is an estimate.' },
+  custom: { id:'custom', vendor:'Custom', name:'Custom XPU',                   dies:2, hbm_gb:192, hbm_tbs:8,    fp8_pf:4,    fp4_pf:8,    tdp_w:1200, conf:'L',
+            pcie:'PCIe Gen6 x16', c2c:'—', note:'Edit in the inspector.' },
+};
+
+const CPUS = {
+  grace:  { id:'grace',  vendor:'NVIDIA', name:'Grace',            cores:72, mem:'LPDDR5X 480 GB', mem_modules:2, c2c:'NVLink-C2C 900 GB/s', tdp_w:300, conf:'H' },
+  vera:   { id:'vera',   vendor:'NVIDIA', name:'Vera',             cores:88, mem:'LPDDR5X 1.5 TB', mem_modules:2, c2c:'NVLink-C2C 1.8 TB/s',  tdp_w:350, conf:'M' },
+  xeon6:  { id:'xeon6',  vendor:'Intel',  name:'Xeon 6 (Granite Rapids)', cores:64, mem:'DDR5 8-ch', mem_modules:8, c2c:'UPI', tdp_w:350, conf:'H' },
+  turin:  { id:'turin',  vendor:'AMD',    name:'EPYC Turin',       cores:128,mem:'DDR5 12-ch', mem_modules:12, c2c:'Infinity Fabric', tdp_w:400, conf:'H' },
+  venice: { id:'venice', vendor:'AMD',    name:'EPYC Venice',      cores:256,mem:'DDR5 16-ch', mem_modules:16, c2c:'Infinity Fabric', tdp_w:500, conf:'L' },
+  spr:    { id:'spr',    vendor:'Intel',  name:'Xeon (Sapphire Rapids)', cores:48, mem:'DDR5 8-ch', mem_modules:8, c2c:'UPI', tdp_w:350, conf:'M' },
+  none:   { id:'none',   vendor:'—',      name:'No host CPU on tray', cores:0, mem:'—', mem_modules:0, c2c:'—', tdp_w:0, conf:'H' },
+};
+
+const NICS = {
+  cx7:     { id:'cx7',     vendor:'NVIDIA',   name:'ConnectX-7',         gbps:400,  ports:1, form:'OSFP (twin-port 800G cage)', pcie:'Gen5 x16', tdp_w:25, conf:'H' },
+  cx8:     { id:'cx8',     vendor:'NVIDIA',   name:'ConnectX-8 SuperNIC',gbps:800,  ports:1, form:'OSFP 800G',            pcie:'Gen6 x16 + PCIe switch', tdp_w:35, conf:'H' },
+  cx9:     { id:'cx9',     vendor:'NVIDIA',   name:'ConnectX-9',         gbps:1600, ports:1, form:'OSFP 1.6T',            pcie:'Gen6 x16 ×2', tdp_w:50, conf:'M' },
+  nitro5:  { id:'nitro5',  vendor:'AWS',      name:'Nitro v5 / EFAv3',   gbps:400,  ports:1, form:'OSFP / QSFP-DD',       pcie:'Gen5 x16', tdp_w:30, conf:'L' },
+  nitro6:  { id:'nitro6',  vendor:'AWS',      name:'Nitro v6 / EFAv4 (est.)', gbps:800, ports:1, form:'OSFP 800G',       pcie:'Gen6 x16', tdp_w:40, conf:'L' },
+  pollara: { id:'pollara', vendor:'AMD Pensando', name:'Pollara 400',    gbps:400,  ports:1, form:'QSFP112',              pcie:'Gen5 x16', tdp_w:25, conf:'H' },
+  vulcano: { id:'vulcano', vendor:'AMD Pensando', name:'Vulcano 800',    gbps:800,  ports:1, form:'OSFP 800G',            pcie:'Gen6 x16 / UALink', tdp_w:40, conf:'M' },
+  thoru:   { id:'thoru',   vendor:'Broadcom', name:'Thor Ultra 800G',    gbps:800,  ports:1, form:'OSFP 800G',            pcie:'Gen6 x16', tdp_w:35, conf:'M' },
+  tpuhost: { id:'tpuhost', vendor:'Google',   name:'Host NIC (Titanium)',gbps:400,  ports:1, form:'OSFP',                 pcie:'Gen5 x16', tdp_w:25, conf:'L' },
+  none:    { id:'none',    vendor:'—',        name:'No scale-out NIC',   gbps:0,    ports:0, form:'—', pcie:'—', tdp_w:0, conf:'H' },
+};
+
+const DPUS = {
+  bf3:  { id:'bf3',  vendor:'NVIDIA', name:'BlueField-3 DPU', gbps:400, tdp_w:75,  conf:'H', note:'Front-end / storage network per tray.' },
+  bf4:  { id:'bf4',  vendor:'NVIDIA', name:'BlueField-4 DPU', gbps:800, tdp_w:100, conf:'M', note:'Vera Rubin generation.' },
+  nitro:{ id:'nitro',vendor:'AWS',    name:'Nitro controller', gbps:100, tdp_w:30,  conf:'M', note:'Hypervisor offload / management.' },
+  none: { id:'none', vendor:'—',      name:'No DPU',          gbps:0,   tdp_w:0,   conf:'H', note:'' },
+};
+
+/* Scale-up switch ASICs. `ports` are ports of the fabric link type
+   (lanes_per_link × lane_gbps); `serdes` is total lane count for reference. */
+const SU_SWITCHES = {
+  nvsw5:   { id:'nvsw5',   vendor:'NVIDIA',   name:'NVLink 5 Switch (NVSwitch 5)', ports:72,  serdes:144, serdes_gbps:200, tbs_bidir:7.2,  tdp_w:200, conf:'H',
+             note:'72 NVLink 5 ports × 2 lanes × 200G. Two per 1U NVLink switch tray in NVL72.' },
+  nvsw6:   { id:'nvsw6',   vendor:'NVIDIA',   name:'NVLink 6 Switch',              ports:72,  serdes:288, serdes_gbps:200, tbs_bidir:14.4, tdp_w:300, conf:'M',
+             note:'14.4 TB/s per chip (Vera Rubin NVL144). Port/lane split is inferred.' },
+  nvsw7:   { id:'nvsw7',   vendor:'NVIDIA',   name:'NVLink 7 Switch (est.)',       ports:208, serdes:832, serdes_gbps:200, tbs_bidir:57.6, tdp_w:500, conf:'L',
+             note:'Placeholder for Rubin Ultra / Kyber.' },
+  th6:     { id:'th6',     vendor:'Broadcom', name:'Tomahawk 6 (102.4T)',          ports:128, serdes:512, serdes_gbps:200, tbs_bidir:25.6, tdp_w:900, conf:'H',
+             note:'512 × 200G SerDes. As scale-up: 128 × 800G or 64 × 1.6T; SUE / UALoE.' },
+  thultra: { id:'thultra', vendor:'Broadcom', name:'Tomahawk Ultra (51.2T)',       ports:64,  serdes:512, serdes_gbps:100, tbs_bidir:12.8, tdp_w:500, conf:'M',
+             note:'Low-latency scale-up Ethernet (SUE). 64 × 800G.' },
+  ualink:  { id:'ualink',  vendor:'UALink (Astera/Marvell class)', name:'UALink switch (est.)', ports:128, serdes:512, serdes_gbps:200, tbs_bidir:25.6, tdp_w:700, conf:'L',
+             note:'UALink 200G spec-class switch. Placeholder radix.' },
+  neuronsw:{ id:'neuronsw',vendor:'AWS',      name:'NeuronSwitch-v1',              ports:64,  serdes:512, serdes_gbps:200, tbs_bidir:12.8, tdp_w:500, conf:'L',
+             note:'Trainium3 UltraServer switch. Radix undisclosed — placeholder.' },
+  ocs:     { id:'ocs',     vendor:'Google',   name:'Palomar OCS (136×136)',        ports:136, serdes:0,   serdes_gbps:0,   tbs_bidir:0,    tdp_w:100, conf:'M',
+             note:'MEMS optical circuit switch between TPU cubes; rate-agnostic.' },
+  none:    { id:'none',    vendor:'—',        name:'No switch (direct / torus)',   ports:0,   serdes:0,   serdes_gbps:0,   tbs_bidir:0,    tdp_w:0,   conf:'H', note:'' },
+};
+
+const SO_SWITCHES = {
+  qx800:  { id:'qx800',  vendor:'NVIDIA',   name:'Quantum-X800 (IB, 144×800G)',  ports:144, port_gbps:800,  tbs:115.2, media:'pluggable', conf:'H' },
+  sx800:  { id:'sx800',  vendor:'NVIDIA',   name:'Spectrum-X800 (64×800G)',      ports:64,  port_gbps:800,  tbs:51.2,  media:'pluggable', conf:'H' },
+  sxp:    { id:'sxp',    vendor:'NVIDIA',   name:'Spectrum-X Photonics (128×800G CPO)', ports:128, port_gbps:800, tbs:102.4, media:'cpo', conf:'M' },
+  qxp:    { id:'qxp',    vendor:'NVIDIA',   name:'Quantum-X Photonics (144×800G CPO)',  ports:144, port_gbps:800, tbs:115.2, media:'cpo', conf:'M' },
+  th6:    { id:'th6',    vendor:'Broadcom', name:'Tomahawk 6 (64×1.6T)',         ports:64,  port_gbps:1600, tbs:102.4, media:'pluggable', conf:'H' },
+  th6cpo: { id:'th6cpo', vendor:'Broadcom', name:'Tomahawk 6 Davisson (CPO)',    ports:64,  port_gbps:1600, tbs:102.4, media:'cpo', conf:'M' },
+  th5:    { id:'th5',    vendor:'Broadcom', name:'Tomahawk 5 (64×800G)',         ports:64,  port_gbps:800,  tbs:51.2,  media:'pluggable', conf:'H' },
+  jupiter:{ id:'jupiter',vendor:'Google',   name:'Jupiter DC fabric (OCS)',      ports:128, port_gbps:400,  tbs:51.2,  media:'ocs', conf:'L' },
+};
+
+/* Topologies for the scale-up fabric */
+const TOPOLOGIES = {
+  switched:   { id:'switched',   name:'Switched, rack-scale (all XPUs ↔ switch trays)', desc:'Every XPU link lands on a switch ASIC in a switch tray. Single-tier, non-blocking when XPU links ≤ switch ports.' },
+  intray:     { id:'intray',     name:'Switched, in-tray (baseboard NVSwitch / UBB)',   desc:'Scale-up domain is one tray. Switch ASICs sit on the baseboard; scale-out optics carry everything beyond the node.' },
+  mesh:       { id:'mesh',       name:'Direct mesh, in-tray (Infinity Fabric)',          desc:'Every XPU in the tray links directly to every other XPU. links_per_xpu = XPUs per tray − 1.' },
+  torus2d:    { id:'torus2d',    name:'2D torus (4 neighbors)',                          desc:'Direct chip-to-chip links; each chip has 4 neighbors. Wrap-around links leave the tray.' },
+  torus3d:    { id:'torus3d',    name:'3D torus (6 neighbors)',                          desc:'Direct links, 6 neighbors per chip. Cube of n³ chips; wrap-around links exit the rack (via OCS for TPU).' },
+};
+
+/* ---------------- Rack presets ---------------- */
+
+const PRESETS = [
+  {
+    id:'gb200_nvl72', name:'GB200 NVL72', vendor:'NVIDIA', status:'Shipping', conf:'H', year:'2024–25',
+    tagline:'72 Blackwell GPUs, 36 Grace, one NVLink domain over a copper spine.',
+    xpu:'b200', cpu:'grace', nic:'cx7', dpu:'bf3',
+    rack:{ compute_trays:18, xpus_per_tray:4, cpus_per_tray:2, boards_per_tray:2, switch_trays:9, switch_chips_per_tray:2,
+           switch_chips_per_compute_tray:0, nics_per_xpu:1, dpus_per_tray:2, rack_u:48, power_kw:120, cooling:'Direct liquid (cold plates)', form:'Oberon (MGX) rack' },
+    scaleup:{ name:'NVLink 5', topology:'switched', links_per_xpu:18, lanes_per_link:2, lane_gbps:200, sw:'nvsw5',
+              media_xpu_sw:'backplane', media_tray_tray:'backplane', vendor_bidir_tbs:1.8 },
+    scaleout:{ nic_media:'pluggable', module_gbps:800, so_sw:'qx800', dpu_media:'pluggable', oversub:1 },
+    board:{ name:'Bianca board', xpus:2, cpus:1, mem_per_cpu:2, mem_type:'LPDDR5X',
+      connectors:[
+        {n:'NVLink 5 connector (×2)', side:'top', cat:'scaleup'},
+        {n:'12 V power connector', side:'left', cat:'power'},
+        {n:'CMOS battery', side:'left', cat:'mgmt'},
+        {n:'BMC', side:'left', cat:'mgmt'},
+        {n:'Mirror Mezz connector', side:'left', cat:'pcie'},
+        {n:'8× connector', side:'right', cat:'pcie'},
+        {n:'MCIO x16 (PCIe Gen5 → ConnectX-7)', side:'right', cat:'pcie'},
+        {n:'225 W power connector', side:'right', cat:'power'},
+        {n:'SlimSAS PCIe x8 (E1.S / BlueField-3)', side:'right', cat:'pcie'},
+        {n:'Grace–Grace C2C connector', side:'right', cat:'c2c'},
+        {n:'8-pin fan connectors (×6)', side:'bottom', cat:'power'},
+      ]},
+    sources:['NVIDIA GB200 NVL72 datasheet: 1.8 TB/s NVLink per GPU, 130 TB/s aggregate, 5,000+ NVLink copper cables.',
+             'NVIDIA GTC 2024 keynote: 18 compute trays, 9 NVLink switch trays, ~120 kW.'],
+  },
+  {
+    id:'gb300_nvl72', name:'GB300 NVL72', vendor:'NVIDIA', status:'Shipping', conf:'H', year:'2H25',
+    tagline:'Blackwell Ultra: 288 GB HBM3e, ConnectX-8 800G per GPU, same NVLink 5 spine.',
+    xpu:'b300', cpu:'grace', nic:'cx8', dpu:'bf3',
+    rack:{ compute_trays:18, xpus_per_tray:4, cpus_per_tray:2, boards_per_tray:2, switch_trays:9, switch_chips_per_tray:2,
+           switch_chips_per_compute_tray:0, nics_per_xpu:1, dpus_per_tray:2, rack_u:48, power_kw:135, cooling:'Direct liquid (cold plates)', form:'Oberon (MGX) rack' },
+    scaleup:{ name:'NVLink 5', topology:'switched', links_per_xpu:18, lanes_per_link:2, lane_gbps:200, sw:'nvsw5',
+              media_xpu_sw:'backplane', media_tray_tray:'backplane', vendor_bidir_tbs:1.8 },
+    scaleout:{ nic_media:'pluggable', module_gbps:800, so_sw:'qx800', dpu_media:'pluggable', oversub:1 },
+    board:{ name:'Bianca board (GB300)', xpus:2, cpus:1, mem_per_cpu:2, mem_type:'LPDDR5X',
+      connectors:[
+        {n:'NVLink 5 connector (×2)', side:'top', cat:'scaleup'},
+        {n:'12 V power connector', side:'left', cat:'power'},
+        {n:'BMC', side:'left', cat:'mgmt'},
+        {n:'MCIO x16 (PCIe Gen6 → ConnectX-8)', side:'right', cat:'pcie'},
+        {n:'ConnectX-8 mezzanine (PCIe switch + 800G)', side:'right', cat:'pcie'},
+        {n:'Grace–Grace C2C connector', side:'right', cat:'c2c'},
+        {n:'E1.S storage (SlimSAS)', side:'right', cat:'pcie'},
+        {n:'Fan connectors', side:'bottom', cat:'power'},
+      ]},
+    sources:['NVIDIA GB300 NVL72 product page: 288 GB HBM3e per GPU, ConnectX-8 SuperNIC 800 Gb/s per GPU.'],
+  },
+  {
+    id:'vr_nvl144', name:'Vera Rubin NVL144', vendor:'NVIDIA', status:'Announced', conf:'M', year:'2H26',
+    tagline:'72 Rubin packages (144 dies), NVLink 6 at 3.6 TB/s per package, ConnectX-9 1.6T.',
+    xpu:'rubin', cpu:'vera', nic:'cx9', dpu:'bf4',
+    rack:{ compute_trays:18, xpus_per_tray:4, cpus_per_tray:2, boards_per_tray:2, switch_trays:9, switch_chips_per_tray:2,
+           switch_chips_per_compute_tray:0, nics_per_xpu:1, dpus_per_tray:2, rack_u:48, power_kw:190, cooling:'100% liquid', form:'Oberon (MGX) rack, cable-free trays' },
+    scaleup:{ name:'NVLink 6', topology:'switched', links_per_xpu:18, lanes_per_link:4, lane_gbps:200, sw:'nvsw6',
+              media_xpu_sw:'backplane', media_tray_tray:'backplane', vendor_bidir_tbs:3.6 },
+    scaleout:{ nic_media:'pluggable', module_gbps:1600, so_sw:'th6', dpu_media:'pluggable', oversub:1 },
+    board:{ name:'Rubin compute board', xpus:2, cpus:1, mem_per_cpu:2, mem_type:'LPDDR5X',
+      connectors:[
+        {n:'NVLink 6 connector (×2)', side:'top', cat:'scaleup'},
+        {n:'48 V / 800 V DC power', side:'left', cat:'power'},
+        {n:'BMC', side:'left', cat:'mgmt'},
+        {n:'ConnectX-9 1.6T mezzanine', side:'right', cat:'pcie'},
+        {n:'Vera–Vera C2C', side:'right', cat:'c2c'},
+        {n:'BlueField-4 (front-end)', side:'right', cat:'pcie'},
+        {n:'Liquid cold-plate manifold', side:'bottom', cat:'mgmt'},
+      ]},
+    sources:['NVIDIA GTC 2025: Vera Rubin NVL144 — 3.6 EF FP4 inference, 260 TB/s NVLink 6, 28.8 Tb/s ConnectX-9 per rack; 2H26.',
+             'Lane/link split for NVLink 6 is inferred to reproduce 3.6 TB/s per package (L).'],
+  },
+  {
+    id:'rubin_ultra_nvl576', name:'Rubin Ultra NVL576 (Kyber)', vendor:'NVIDIA', status:'Roadmap', conf:'L', year:'2027',
+    tagline:'144 four-die packages in a 600 kW Kyber rack; NVLink 7 at 1.5 PB/s aggregate.',
+    xpu:'rubinu', cpu:'vera', nic:'cx9', dpu:'bf4',
+    rack:{ compute_trays:72, xpus_per_tray:2, cpus_per_tray:1, boards_per_tray:1, switch_trays:18, switch_chips_per_tray:2,
+           switch_chips_per_compute_tray:0, nics_per_xpu:2, dpus_per_tray:1, rack_u:60, power_kw:600, cooling:'100% liquid', form:'Kyber rack: vertical blades, 4 pods × 18' },
+    scaleup:{ name:'NVLink 7', topology:'switched', links_per_xpu:52, lanes_per_link:4, lane_gbps:200, sw:'nvsw7',
+              media_xpu_sw:'backplane', media_tray_tray:'backplane', vendor_bidir_tbs:10.4 },
+    scaleout:{ nic_media:'cpo', module_gbps:1600, so_sw:'qxp', dpu_media:'pluggable', oversub:1 },
+    board:{ name:'Kyber compute blade', xpus:2, cpus:1, mem_per_cpu:2, mem_type:'LPDDR6 (est.)',
+      connectors:[
+        {n:'NVLink 7 midplane connector', side:'top', cat:'scaleup'},
+        {n:'800 V DC busbar', side:'left', cat:'power'},
+        {n:'ConnectX-9 / CPO scale-out', side:'right', cat:'pcie'},
+        {n:'Cold-plate quick disconnect', side:'bottom', cat:'mgmt'},
+      ]},
+    sources:['NVIDIA GTC 2025 roadmap: Rubin Ultra NVL576, 15 EF FP4, 1.5 PB/s NVLink 7, 600 kW Kyber rack.',
+             'Blade/switch counts and the 52×4×200G link split are placeholders that reproduce the vendor aggregate.'],
+  },
+  {
+    id:'hgx_b200', name:'HGX B200 node rack (4 × 8-GPU)', vendor:'NVIDIA / OEM', status:'Shipping', conf:'H', year:'2024–25',
+    tagline:'Classic scale-out design: NVLink stays on the baseboard, everything else rides pluggable optics.',
+    xpu:'b200', cpu:'xeon6', nic:'cx7', dpu:'bf3',
+    rack:{ compute_trays:4, xpus_per_tray:8, cpus_per_tray:2, boards_per_tray:1, switch_trays:0, switch_chips_per_tray:0,
+           switch_chips_per_compute_tray:2, nics_per_xpu:1, dpus_per_tray:2, rack_u:42, power_kw:60, cooling:'Air (or hybrid)', form:'8–10U HGX servers' },
+    scaleup:{ name:'NVLink 5 (in-node)', topology:'intray', links_per_xpu:18, lanes_per_link:2, lane_gbps:200, sw:'nvsw5',
+              media_xpu_sw:'pcb', media_tray_tray:'pluggable', vendor_bidir_tbs:1.8 },
+    scaleout:{ nic_media:'pluggable', module_gbps:800, so_sw:'qx800', dpu_media:'pluggable', oversub:1 },
+    board:{ name:'HGX B200 baseboard (UBB)', xpus:8, cpus:0, mem_per_cpu:0, mem_type:'—',
+      connectors:[
+        {n:'NVSwitch ×2 on baseboard', side:'top', cat:'scaleup'},
+        {n:'PCIe Gen5 x16 to host (×8)', side:'bottom', cat:'pcie'},
+        {n:'54 V power (×4)', side:'left', cat:'power'},
+        {n:'BMC / I²C', side:'right', cat:'mgmt'},
+      ]},
+    sources:['NVIDIA HGX B200 datasheet: 8 GPUs, 2 NVSwitch, 1.8 TB/s NVLink per GPU, 14.4 TB/s aggregate.'],
+  },
+  {
+    id:'trn2_ultraserver', name:'Trn2 UltraServer (64-chip)', vendor:'AWS', status:'Shipping', conf:'M', year:'2024–25',
+    tagline:'Four 16-chip Trn2 servers joined by NeuronLink into a 64-chip torus; no scale-up switch.',
+    xpu:'trn2', cpu:'spr', nic:'nitro5', dpu:'nitro',
+    rack:{ compute_trays:4, xpus_per_tray:16, cpus_per_tray:2, boards_per_tray:2, switch_trays:0, switch_chips_per_tray:0,
+           switch_chips_per_compute_tray:0, nics_per_xpu:0.5, dpus_per_tray:2, rack_u:42, power_kw:45, cooling:'Air', form:'4 × 2U-class Trn2 servers' },
+    scaleup:{ name:'NeuronLink-v3', topology:'torus3d', links_per_xpu:6, lanes_per_link:8, lane_gbps:100, sw:'none',
+              media_xpu_sw:'pcb', media_tray_tray:'aec', media_ext:'aec', wrap_external:false, vendor_bidir_tbs:1.28 },
+    scaleout:{ nic_media:'pluggable', module_gbps:400, so_sw:'th5', dpu_media:'pluggable', oversub:1 },
+    board:{ name:'Trn2 accelerator board (8-chip)', xpus:8, cpus:0, mem_per_cpu:0, mem_type:'—',
+      connectors:[
+        {n:'NeuronLink cable connectors (to sibling servers)', side:'top', cat:'scaleup'},
+        {n:'PCIe Gen5 to host / Nitro', side:'bottom', cat:'pcie'},
+        {n:'12 V / 48 V power', side:'left', cat:'power'},
+        {n:'BMC', side:'right', cat:'mgmt'},
+      ]},
+    sources:['AWS Trn2 documentation: 16 chips per instance, 3.2 Tb/s EFAv3; UltraServer = 64 chips over NeuronLink.',
+             'NeuronLink-v3 per-chip bandwidth and the 2D/3D torus link split are placeholders (L).'],
+  },
+  {
+    id:'trn3_ultraserver', name:'Trn3 UltraServer (144-chip)', vendor:'AWS', status:'Announced', conf:'L', year:'2026',
+    tagline:'Trainium3 moves to a switched scale-up fabric: NeuronSwitch-v1, 144 chips per UltraServer.',
+    xpu:'trn3', cpu:'spr', nic:'nitro6', dpu:'nitro',
+    rack:{ compute_trays:9, xpus_per_tray:16, cpus_per_tray:2, boards_per_tray:2, switch_trays:9, switch_chips_per_tray:2,
+           switch_chips_per_compute_tray:0, nics_per_xpu:0.5, dpus_per_tray:2, rack_u:48, power_kw:150, cooling:'Liquid', form:'Multi-rack UltraServer (placeholder layout)' },
+    scaleup:{ name:'NeuronLink-v4', topology:'switched', links_per_xpu:8, lanes_per_link:8, lane_gbps:200, sw:'neuronsw',
+              media_xpu_sw:'backplane', media_tray_tray:'aec', vendor_bidir_tbs:3.2 },
+    scaleout:{ nic_media:'pluggable', module_gbps:800, so_sw:'th6', dpu_media:'pluggable', oversub:1 },
+    board:{ name:'Trn3 accelerator board (8-chip)', xpus:8, cpus:0, mem_per_cpu:0, mem_type:'—',
+      connectors:[
+        {n:'NeuronLink to NeuronSwitch (backplane)', side:'top', cat:'scaleup'},
+        {n:'PCIe Gen5 to host / Nitro', side:'bottom', cat:'pcie'},
+        {n:'48 V power', side:'left', cat:'power'},
+      ]},
+    sources:['AWS re:Invent 2025: Trn3 UltraServer with 144 Trainium3 chips and NeuronSwitch. Radix, lane rates and tray layout are placeholders.'],
+  },
+  {
+    id:'tpu_v7_rack', name:'TPU v7 Ironwood rack (64-chip cube)', vendor:'Google', status:'Shipping', conf:'M', year:'2025',
+    tagline:'4×4×4 ICI torus in copper inside the rack; wrap-around links exit through optical circuit switches.',
+    xpu:'tpuv7', cpu:'spr', nic:'tpuhost', dpu:'none',
+    rack:{ compute_trays:16, xpus_per_tray:4, cpus_per_tray:1, boards_per_tray:1, switch_trays:0, switch_chips_per_tray:0,
+           switch_chips_per_compute_tray:0, nics_per_xpu:0.5, dpus_per_tray:0, rack_u:42, power_kw:80, cooling:'Liquid', form:'Google TPU rack, 64 chips' },
+    scaleup:{ name:'ICI (Ironwood)', topology:'torus3d', links_per_xpu:6, lanes_per_link:4, lane_gbps:200, sw:'ocs',
+              media_xpu_sw:'pcb', media_tray_tray:'dac', media_ext:'ocs', wrap_external:true, vendor_bidir_tbs:1.2 },
+    scaleout:{ nic_media:'pluggable', module_gbps:400, so_sw:'jupiter', dpu_media:'pluggable', oversub:1 },
+    board:{ name:'Ironwood host tray (4 TPU)', xpus:4, cpus:1, mem_per_cpu:8, mem_type:'DDR5',
+      connectors:[
+        {n:'ICI copper (intra-cube) ×6 per chip', side:'top', cat:'scaleup'},
+        {n:'ICI optical (to OCS) — wrap-around', side:'right', cat:'scaleup'},
+        {n:'Host NIC to Jupiter', side:'right', cat:'pcie'},
+        {n:'48 V power', side:'left', cat:'power'},
+        {n:'Liquid cold-plate manifold', side:'bottom', cat:'mgmt'},
+      ]},
+    sources:['Google Cloud Ironwood announcement: 9.6 Tb/s ICI per chip, 192 GB HBM3e, 7.37 TB/s, 9,216-chip pods over OCS.',
+             'Chips per tray and per-rack power are estimates.'],
+  },
+  {
+    id:'amd_helios', name:'AMD Helios (72 × MI450)', vendor:'AMD', status:'Announced', conf:'M', year:'2H26',
+    tagline:'UALink over Ethernet scale-up at 3.6 TB/s per GPU, Vulcano 800G scale-out, double-wide rack.',
+    xpu:'mi450', cpu:'venice', nic:'vulcano', dpu:'none',
+    rack:{ compute_trays:18, xpus_per_tray:4, cpus_per_tray:1, boards_per_tray:1, switch_trays:9, switch_chips_per_tray:2,
+           switch_chips_per_compute_tray:0, nics_per_xpu:3, dpus_per_tray:0, rack_u:48, power_kw:200, cooling:'Liquid', form:'Double-wide OCP rack' },
+    scaleup:{ name:'UALink / UALoE', topology:'switched', links_per_xpu:18, lanes_per_link:4, lane_gbps:200, sw:'th6',
+              media_xpu_sw:'backplane', media_tray_tray:'backplane', vendor_bidir_tbs:3.6 },
+    scaleout:{ nic_media:'pluggable', module_gbps:800, so_sw:'th6', dpu_media:'pluggable', oversub:1 },
+    board:{ name:'Helios compute tray board', xpus:4, cpus:1, mem_per_cpu:12, mem_type:'DDR5',
+      connectors:[
+        {n:'UALink backplane connectors', side:'top', cat:'scaleup'},
+        {n:'Vulcano 800G NIC ×12 (3 per GPU)', side:'right', cat:'pcie'},
+        {n:'48 V power', side:'left', cat:'power'},
+        {n:'BMC', side:'left', cat:'mgmt'},
+      ]},
+    sources:['AMD Advancing AI 2025: Helios — 72 MI450, 432 GB HBM4, 260 TB/s scale-up, 43 TB/s scale-out.',
+             'Switch ASIC choice, tray layout, and 3 NICs per GPU are inferred from aggregates (L).'],
+  },
+  {
+    id:'mi355x_rack', name:'MI355X UBB rack (4 × 8-GPU)', vendor:'AMD / OEM', status:'Shipping', conf:'H', year:'2025',
+    tagline:'8-GPU Infinity Fabric mesh per node, Pollara 400 scale-out; no scale-up switch at all.',
+    xpu:'mi355x', cpu:'turin', nic:'pollara', dpu:'none',
+    rack:{ compute_trays:4, xpus_per_tray:8, cpus_per_tray:2, boards_per_tray:1, switch_trays:0, switch_chips_per_tray:0,
+           switch_chips_per_compute_tray:0, nics_per_xpu:1, dpus_per_tray:0, rack_u:42, power_kw:60, cooling:'Air or liquid', form:'8–10U UBB servers' },
+    scaleup:{ name:'Infinity Fabric (XGMI)', topology:'mesh', links_per_xpu:7, lanes_per_link:16, lane_gbps:38.4, sw:'none',
+              media_xpu_sw:'pcb', media_tray_tray:'pluggable', vendor_bidir_tbs:1.075 },
+    scaleout:{ nic_media:'pluggable', module_gbps:400, so_sw:'th5', dpu_media:'pluggable', oversub:1 },
+    board:{ name:'MI355X UBB', xpus:8, cpus:0, mem_per_cpu:0, mem_type:'—',
+      connectors:[
+        {n:'Infinity Fabric mesh on UBB (7 links / GPU)', side:'top', cat:'scaleup'},
+        {n:'PCIe Gen5 x16 to host (×8)', side:'bottom', cat:'pcie'},
+        {n:'54 V power', side:'left', cat:'power'},
+      ]},
+    sources:['AMD MI355X spec: 288 GB HBM3e, 8 TB/s, 153.6 GB/s per IF link × 7.'],
+  },
+];
+
+/* ---------------- Assumptions ---------------- */
+/* Flat, keyed list. `media.*` rows are generated from MEDIA. */
+function defaultAssumptions() {
+  const rows = [
+    { key:'conv.bidir',        group:'Conventions', label:'Report link bandwidth as', type:'select', options:['bidirectional','per direction'], value:'bidirectional', conf:'H',
+      note:'NVIDIA (NVLink), Google (ICI) and AMD (UALink) quote bidirectional totals. AWS NeuronLink figures are ambiguous.' },
+    { key:'conv.both_ends',    group:'Conventions', label:'Count cable / optic ends at both sides', type:'bool', value:true, conf:'H',
+      note:'A DAC has two ends; a pluggable link needs two modules. Switch-side ends are counted when on.' },
+    { key:'conv.gb_decimal',   group:'Conventions', label:'GB/s = Gb/s ÷ 8 (decimal)', type:'bool', value:true, conf:'H', note:'No encoding overhead applied to NVLink / ICI. Ethernet lanes are quoted at nominal rate.' },
+    { key:'serdes.lr_pj',      group:'SerDes power', label:'Long-reach SerDes (host side)', unit:'pJ/bit', type:'num', value:5, conf:'M',
+      note:'Per lane end, 200G PAM4 LR class. Applies to backplane, DAC, ACC, AEC, pluggable, LPO.' },
+    { key:'serdes.xsr_pj',     group:'SerDes power', label:'XSR / die-to-optics SerDes (CPO)', unit:'pJ/bit', type:'num', value:1.5, conf:'M',
+      note:'Short-reach electrical hop inside a CPO package.' },
+    { key:'serdes.count_switch_side', group:'SerDes power', label:'Include switch-side SerDes power', type:'bool', value:true, conf:'H', note:'Both ends of every scale-up link burn SerDes energy.' },
+    { key:'optics.lanes_per_module', group:'Optics sizing', label:'Lanes per pluggable module', unit:'lanes', type:'num', value:8, conf:'H', note:'OSFP / QSFP-DD 8-lane. 800G = 8 × 100G, 1.6T = 8 × 200G.' },
+    { key:'optics.fiber_pairs_per_module', group:'Optics sizing', label:'Fiber pairs per module (DR8)', unit:'pairs', type:'num', value:8, conf:'H', note:'DR8 parallel fiber; FR/LR variants use fewer fibers via WDM.' },
+    { key:'copper.pairs_per_lane', group:'Copper sizing', label:'Differential pairs per lane per direction', unit:'pairs', type:'num', value:1, conf:'H', note:'One twinax pair per lane per direction → 2 pairs per full-duplex lane.' },
+    { key:'copper.spine_reach_m', group:'Copper sizing', label:'Longest in-rack backplane run', unit:'m', type:'num', value:1.4, conf:'M', note:'Top compute tray to bottom switch tray in a 48U Oberon rack.' },
+    { key:'power.overhead_pct', group:'Rack power', label:'Rack overhead over silicon TDPs', unit:'%', type:'num', value:15, conf:'M', note:'Fans/pumps, PSU losses, memory, misc boards. Used only for the computed rack estimate.' },
+    { key:'cost.xpu_usd',      group:'Cost (est.)', label:'XPU package', unit:'$', type:'num', value:35000, conf:'L', note:'Blended ASP placeholder for context only; interconnect cost is the focus.' },
+    { key:'cost.su_switch_usd',group:'Cost (est.)', label:'Scale-up switch ASIC + tray share', unit:'$', type:'num', value:6000, conf:'L', note:'Per switch chip incl. its share of the tray.' },
+    { key:'cost.nic_usd',      group:'Cost (est.)', label:'Scale-out NIC', unit:'$', type:'num', value:1500, conf:'L', note:'800G class SuperNIC. 400G ≈ $900, 1.6T ≈ $2,500.' },
+  ];
+  MEDIA_ORDER.forEach(id => {
+    const m = MEDIA[id];
+    rows.push({ key:`media.${id}.reach_m`, group:'Media reach', label:m.name, unit:'m', type:'num', value:m.reach_m, conf:m.conf, note:m.note, media:id });
+    rows.push({ key:`media.${id}.w_end`,   group:'Media power', label:m.name, unit:'W per 800G end', type:'num', value:m.w_end, conf:m.conf, note:'Excludes host SerDes (counted separately). Scaled linearly with lane rate × lanes.', media:id });
+    rows.push({ key:`media.${id}.usd_end`, group:'Media cost',  label:m.name, unit:'$ per 800G end', type:'num', value:m.usd_end, conf:m.conf, note:'Street-price class estimate per 800G-equivalent end.', media:id });
+  });
+  return rows;
+}
+
+const CONNECTOR_CATS = {
+  scaleup:{ name:'Scale-up fabric', color:'#B26A2B' },
+  pcie:   { name:'PCIe / scale-out', color:'#1E4E8C' },
+  power:  { name:'Power', color:'#B9890B' },
+  mgmt:   { name:'Management / misc', color:'#3E8A5A' },
+  c2c:    { name:'CPU-to-CPU / C2C', color:'#6B6F7A' },
+};
+
+window.RE_DATA = { MEDIA, MEDIA_ORDER, XPUS, CPUS, NICS, DPUS, SU_SWITCHES, SO_SWITCHES, TOPOLOGIES, PRESETS, CONNECTOR_CATS, defaultAssumptions };
+
+</script>
+<script>
+/* Rack Explorer — compute layer. Pure functions: (build, assumptions) → derived metrics. */
+(function(){
+const D = window.RE_DATA;
+
+function A(asm, key){ return asm[key]; }
+function ceil(x){ return Math.ceil(x - 1e-9); }
+
+function compute(build, asm){
+  const r = build.rack, su = build.scaleup, so = build.scaleout, B = build.blocks;
+  const out = { warnings:[], segments:[], so_segments:[] };
+
+  /* ---- counts ---- */
+  const n = out.n = {};
+  n.xpus   = r.compute_trays * r.xpus_per_tray;
+  n.cpus   = r.compute_trays * r.cpus_per_tray;
+  n.boards = r.compute_trays * r.boards_per_tray;
+  n.nics   = Math.round(n.xpus * r.nics_per_xpu);
+  n.dpus   = r.compute_trays * r.dpus_per_tray;
+  n.sw_tray_chips = r.switch_trays * r.switch_chips_per_tray;
+  n.sw_intray_chips = r.compute_trays * r.switch_chips_per_compute_tray;
+  n.sw_chips = n.sw_tray_chips + n.sw_intray_chips;
+  n.dies = n.xpus * (B.xpu.dies || 1);
+
+  /* ---- scale-up link math ---- */
+  const L = out.link = {};
+  L.lane_gbps = su.lane_gbps;
+  L.lanes = su.lanes_per_link;
+  L.link_gbps_dir = su.lanes_per_link * su.lane_gbps;
+  L.xpu_gbps_dir = su.links_per_xpu * L.link_gbps_dir;
+  L.xpu_GBs_dir = L.xpu_gbps_dir / 8;
+  L.xpu_tbs_bidir = L.xpu_gbps_dir * 2 / 8000;
+  L.xpu_tbs_dir = L.xpu_gbps_dir / 8000;
+  L.xpu_lanes = su.links_per_xpu * su.lanes_per_link;
+  L.rack_tbs_bidir = L.xpu_tbs_bidir * n.xpus;
+  L.formula = `${su.links_per_xpu} links × ${su.lanes_per_link} lanes × ${su.lane_gbps} Gb/s = ${fmt(L.xpu_gbps_dir)} Gb/s per direction = ${fmt(L.xpu_GBs_dir)} GB/s per direction = ${fmt(L.xpu_tbs_bidir,2)} TB/s bidirectional`;
+  if (su.vendor_bidir_tbs){
+    L.vendor_delta_pct = (L.xpu_tbs_bidir - su.vendor_bidir_tbs) / su.vendor_bidir_tbs * 100;
+    if (Math.abs(L.vendor_delta_pct) > 2) out.warnings.push({lvl:'warn', text:`Computed scale-up bandwidth (${fmt(L.xpu_tbs_bidir,2)} TB/s) differs from the vendor figure (${su.vendor_bidir_tbs} TB/s) by ${fmt(L.vendor_delta_pct,0)}%. Adjust links, lanes or lane rate — or the vendor figure.`});
+  }
+
+  /* ---- topology / segments ---- */
+  const topo = su.topology;
+  const sw = B.sw;
+  const T = out.topo = { id: topo, name: D.TOPOLOGIES[topo].name };
+  const xpu_link_ends = n.xpus * su.links_per_xpu;
+  T.xpu_link_ends = xpu_link_ends;
+
+  const mediaIn  = su.media_xpu_sw;
+  const mediaTT  = su.media_tray_tray;
+  const mediaExt = su.media_ext || su.media_tray_tray;
+
+  if (topo === 'switched' || topo === 'intray'){
+    T.domain = topo === 'switched' ? n.xpus : r.xpus_per_tray;
+    T.ports_avail = n.sw_chips * (sw.ports || 0);
+    T.links = xpu_link_ends;                                // one XPU end + one switch end each
+    T.util = T.ports_avail ? T.links / T.ports_avail : Infinity;
+    T.chips_required = sw.ports ? ceil(T.links / sw.ports) : 0;
+    const chipsInDomain = topo === 'switched' ? n.sw_chips : r.switch_chips_per_compute_tray;
+    T.links_per_xpu_per_switch = chipsInDomain ? su.links_per_xpu / chipsInDomain : 0;
+    T.switch_bisection_tbs = n.sw_chips * (sw.ports||0) * L.link_gbps_dir * 2 / 8000 / 2;  // half the ports "up" in a flat fabric
+    if (!n.sw_chips) out.warnings.push({lvl:'err', text:'Switched topology but zero switch ASICs. Add switch trays or in-tray switch chips.'});
+    else if (T.util > 1.0001) out.warnings.push({lvl:'err', text:`XPU links (${fmt(T.links)}) exceed switch ports (${fmt(T.ports_avail)}): fabric is ${fmt(T.util,2)}× oversubscribed. Needs ${T.chips_required} × ${sw.name}.`});
+    else if (T.util < 0.85) out.warnings.push({lvl:'info', text:`Switch ports ${fmt((1-T.util)*100,0)}% unused (${fmt(T.ports_avail - T.links)} spare). Spare ports could be scale-out uplinks or a second tier.`});
+    if (chipsInDomain && Math.abs(T.links_per_xpu_per_switch - Math.round(T.links_per_xpu_per_switch)) > 1e-6)
+      out.warnings.push({lvl:'info', text:`${su.links_per_xpu} links per XPU do not divide evenly across ${chipsInDomain} switch ASICs (${fmt(T.links_per_xpu_per_switch,2)} each). Real designs stripe unevenly or use a different radix.`});
+    out.segments.push(seg('xpu_sw', topo==='switched' ? 'XPU → switch tray' : 'XPU → baseboard switch', mediaIn, T.links, L, asm, su, 'One link per XPU per port; both ends counted.'));
+  }
+  else if (topo === 'mesh'){
+    const k = r.xpus_per_tray;
+    T.domain = k;
+    T.links = r.compute_trays * k * (k-1) / 2;
+    if (su.links_per_xpu !== k-1) out.warnings.push({lvl:'warn', text:`Full mesh of ${k} XPUs needs ${k-1} links per XPU (you have ${su.links_per_xpu}).`});
+    out.segments.push(seg('mesh', 'XPU ↔ XPU mesh (in tray)', mediaIn, T.links, L, asm, su, 'k(k−1)/2 links per tray.'));
+  }
+  else { // torus
+    const dims = topo === 'torus3d' ? 3 : 2;
+    const side = Math.round(Math.pow(n.xpus, 1/dims));
+    T.domain = n.xpus; T.dims = dims; T.side = side;
+    if (Math.pow(side, dims) !== n.xpus) out.warnings.push({lvl:'warn', text:`${n.xpus} XPUs is not a perfect ${dims}D torus (${side}^${dims} = ${Math.pow(side,dims)}). Counts below assume a regular torus.`});
+    const totalLinks = n.xpus * su.links_per_xpu / 2;
+    const k = r.xpus_per_tray;
+    // intra-tray: chips in a tray form a ring (k<=4 → 2 neighbours) or a 2D plane (4 neighbours)
+    const intraNeigh = Math.min(su.links_per_xpu, k >= 9 ? 4 : (k >= 3 ? 2 : (k===2 ? 1 : 0)));
+    const intra = r.compute_trays * k * intraNeigh / 2;
+    const wrap = su.wrap_external ? dims * Math.pow(side, dims-1) : 0;
+    const inter = Math.max(0, totalLinks - intra - wrap);
+    T.links = totalLinks; T.intra = intra; T.inter = inter; T.wrap = wrap;
+    if (intra) out.segments.push(seg('intra', 'XPU ↔ XPU inside tray', mediaIn, intra, L, asm, su, `${intraNeigh} in-tray neighbours per chip.`));
+    if (inter) out.segments.push(seg('inter', 'Tray ↔ tray inside rack', mediaTT, inter, L, asm, su, 'Remaining torus edges between trays.'));
+    if (wrap)  out.segments.push(seg('wrap',  'Wrap-around links leaving rack', mediaExt, wrap, L, asm, su, `${dims} × ${side}^${dims-1} torus wrap edges, one per row.`));
+  }
+
+  /* ---- reach checks ---- */
+  out.segments.forEach(s => {
+    const reach = A(asm, `media.${s.media}.reach_m`);
+    let need = 0.3;
+    if (s.id === 'xpu_sw' && topo === 'switched') need = A(asm,'copper.spine_reach_m');
+    if (s.id === 'inter') need = 1.0;
+    if (s.id === 'wrap') need = 5;
+    s.reach_m = reach; s.need_m = need;
+    if (reach < need) out.warnings.push({lvl:'warn', text:`${s.name}: ${D.MEDIA[s.media].name} reach (${reach} m) is below the ~${need} m this segment needs at ${su.lane_gbps}G/lane.`});
+    if (s.media === 'dac' && su.lane_gbps >= 200 && reach > 1.5) out.warnings.push({lvl:'info', text:`DAC reach at 200G/lane is typically ≤ 1.5 m; the assumption is ${reach} m.`});
+  });
+
+  /* ---- scale-out ---- */
+  const S = out.so = {};
+  const nic = B.nic, dpu = B.dpu, sosw = B.so_sw;
+  S.nic_gbps = nic.gbps; S.nics = n.nics;
+  S.rack_gbps_dir = n.nics * nic.gbps;
+  S.rack_tbs_dir = S.rack_gbps_dir / 1000;
+  S.rack_tbs_bidir = S.rack_tbs_dir * 2;
+  S.per_xpu_gbps = n.xpus ? S.rack_gbps_dir / n.xpus : 0;
+  S.ratio_su_so = S.per_xpu_gbps ? L.xpu_gbps_dir / S.per_xpu_gbps : Infinity;
+  S.module_gbps = so.module_gbps;
+  S.modules_nic_side = so.module_gbps ? ceil(S.rack_gbps_dir / so.module_gbps) : 0;
+  S.leaf_ports_needed = sosw.port_gbps ? S.rack_gbps_dir / sosw.port_gbps : 0;
+  const down_frac = so.oversub ? so.oversub / (1 + so.oversub) : 0.5;
+  S.leaf_switches = sosw.ports ? ceil(S.leaf_ports_needed / (sosw.ports * down_frac)) : 0;
+  S.lanes = so.module_gbps ? A(asm,'optics.lanes_per_module') : 8;
+  S.lane_gbps = so.module_gbps / S.lanes;
+  if (S.rack_gbps_dir) out.so_segments.push(soSeg('so_nic', `NIC → leaf (${sosw.name})`, so.nic_media, S.rack_gbps_dir, so.module_gbps, asm));
+  S.dpu_gbps_dir = n.dpus * dpu.gbps;
+  if (S.dpu_gbps_dir) out.so_segments.push(soSeg('so_dpu', 'DPU → front-end network', so.dpu_media, S.dpu_gbps_dir, Math.min(so.module_gbps, 800), asm));
+  if (D.MEDIA[so.nic_media].family === 'copper' && A(asm, `media.${so.nic_media}.reach_m`) < 3)
+    out.warnings.push({lvl:'info', text:`Scale-out on ${D.MEDIA[so.nic_media].name}: reach ${A(asm, `media.${so.nic_media}.reach_m`)} m only works with the leaf switch in the same rack.`});
+  if (S.per_xpu_gbps && S.ratio_su_so < 4) out.warnings.push({lvl:'info', text:`Scale-up : scale-out bandwidth ratio is only ${fmt(S.ratio_su_so,1)}:1 — unusually scale-out-heavy.`});
+
+  /* ---- power ---- */
+  const P = out.power = {};
+  P.xpu_kw = n.xpus * B.xpu.tdp_w / 1000;
+  P.cpu_kw = n.cpus * B.cpu.tdp_w / 1000;
+  P.nic_kw = (n.nics * nic.tdp_w + n.dpus * dpu.tdp_w) / 1000;
+  P.sw_kw  = n.sw_chips * (sw.tdp_w||0) / 1000;
+  P.su_media_kw = sum(out.segments.map(s=>s.media_w)) / 1000;
+  P.su_serdes_kw = sum(out.segments.map(s=>s.serdes_w)) / 1000;
+  P.so_media_kw = sum(out.so_segments.map(s=>s.media_w)) / 1000;
+  P.so_serdes_kw = sum(out.so_segments.map(s=>s.serdes_w)) / 1000;
+  P.interconnect_kw = P.su_media_kw + P.su_serdes_kw + P.so_media_kw + P.so_serdes_kw;
+  P.silicon_kw = P.xpu_kw + P.cpu_kw + P.nic_kw + P.sw_kw;
+  P.computed_rack_kw = (P.silicon_kw + P.interconnect_kw) * (1 + A(asm,'power.overhead_pct')/100);
+  P.vendor_rack_kw = r.power_kw;
+  P.interconnect_share = P.computed_rack_kw ? P.interconnect_kw / P.computed_rack_kw : 0;
+  if (r.power_kw && Math.abs(P.computed_rack_kw - r.power_kw)/r.power_kw > 0.25)
+    out.warnings.push({lvl:'info', text:`Computed rack power (${fmt(P.computed_rack_kw,0)} kW) is ${fmt((P.computed_rack_kw/r.power_kw-1)*100,0)}% off the stated ${r.power_kw} kW. Check TDPs or the overhead assumption.`});
+
+  /* ---- cost ---- */
+  const C = out.cost = {};
+  C.su_media = sum(out.segments.map(s=>s.media_usd));
+  C.so_media = sum(out.so_segments.map(s=>s.media_usd));
+  C.su_switch = n.sw_chips * A(asm,'cost.su_switch_usd');
+  C.nic = n.nics * A(asm,'cost.nic_usd') * (nic.gbps/800);
+  C.xpu = n.xpus * A(asm,'cost.xpu_usd');
+  C.interconnect = C.su_media + C.so_media + C.su_switch + C.nic;
+  C.interconnect_per_xpu = n.xpus ? C.interconnect / n.xpus : 0;
+
+  /* ---- BOM (hardware counts) ---- */
+  const bom = out.bom = [];
+  bom.push({cat:'Compute', item:B.xpu.name, qty:n.xpus, unit:'pkg', note:`${n.dies} dies · ${fmt(n.xpus*B.xpu.hbm_gb/1000,1)} TB HBM · ${fmt(n.xpus*B.xpu.hbm_tbs,0)} TB/s HBM`});
+  if (n.cpus) bom.push({cat:'Compute', item:B.cpu.name, qty:n.cpus, unit:'CPU', note:B.cpu.mem});
+  bom.push({cat:'Compute', item:`${build.board.name}`, qty:n.boards, unit:'boards', note:`${build.board.xpus} XPU + ${build.board.cpus} CPU each`});
+  bom.push({cat:'Compute', item:'Compute trays', qty:r.compute_trays, unit:'trays', note:`${r.xpus_per_tray} XPU / ${r.cpus_per_tray} CPU per tray`});
+  if (n.sw_chips) bom.push({cat:'Scale-up', item:sw.name, qty:n.sw_chips, unit:'ASICs', note:`${sw.ports} ports × ${L.link_gbps_dir} Gb/s · ${r.switch_trays} switch trays` + (n.sw_intray_chips?` + ${r.switch_chips_per_compute_tray}/compute tray`:'')});
+  out.segments.forEach(s => {
+    const m = D.MEDIA[s.media];
+    if (m.family === 'copper') bom.push({cat:'Scale-up', item:`${m.name} — ${s.name}`, qty:s.links, unit:'links', note:`${fmt(s.pairs)} twinax pairs · ${fmt(s.lanes_total)} lanes per direction`});
+    else bom.push({cat:'Scale-up', item:`${m.name} — ${s.name}`, qty:s.modules, unit:'modules', note:`${fmt(s.fibers)} fibers · ${s.links} links`});
+  });
+  if (n.nics) bom.push({cat:'Scale-out', item:nic.name, qty:n.nics, unit:'NICs', note:`${nic.gbps} Gb/s each · ${nic.form}`});
+  if (n.dpus) bom.push({cat:'Scale-out', item:dpu.name, qty:n.dpus, unit:'DPUs', note:`${dpu.gbps} Gb/s each`});
+  out.so_segments.forEach(s => {
+    const m = D.MEDIA[s.media];
+    bom.push({cat:'Scale-out', item:`${m.name} — ${s.name}`, qty:s.modules, unit: m.family==='copper' ? 'cable ends' : 'modules', note:`${fmt(s.gbps_dir/1000,1)} Tb/s per direction · ${s.module_gbps}G`});
+  });
+  if (S.leaf_switches) bom.push({cat:'Scale-out', item:`${sosw.name} leaf share`, qty:S.leaf_switches, unit:'switches', note:`${fmt(S.leaf_ports_needed,0)} × ${sosw.port_gbps}G downlinks at ${so.oversub}:1`});
+
+  return out;
+}
+
+/* One scale-up segment: link count, lanes, media & SerDes power, cost, pairs/fibers. */
+function seg(id, name, media, links, L, asm, su, note){
+  const m = D.MEDIA[media];
+  const both = A(asm,'conv.both_ends');
+  const ends = links * (both ? 2 : 1);
+  const eq800 = L.link_gbps_dir / 800;
+  const lanes_total = links * L.lanes;               // per direction
+  const pj = m.id === 'cpo' ? A(asm,'serdes.xsr_pj') : A(asm,'serdes.lr_pj');
+  const serdesEnds = A(asm,'serdes.count_switch_side') ? 2 : 1;
+  const serdes_w = lanes_total * serdesEnds * L.lane_gbps * pj / 1000;   // Gb/s × pJ/bit = mW
+  const media_w = ends * eq800 * A(asm, `media.${media}.w_end`);
+  const media_usd = ends * eq800 * A(asm, `media.${media}.usd_end`);
+  const pairs = m.family === 'copper' ? lanes_total * 2 * A(asm,'copper.pairs_per_lane') : 0;
+  const lpm = A(asm,'optics.lanes_per_module');
+  const modules = m.family === 'optical' ? ceil(lanes_total / lpm) * (both ? 2 : 1) : 0;
+  const fibers = m.family === 'optical' ? ceil(lanes_total / lpm) * A(asm,'optics.fiber_pairs_per_module') * 2 : 0;
+  return { id, name, media, color:m.color, links, ends, lanes_total, gbps_dir: links * L.link_gbps_dir, tbs_bidir: links*L.link_gbps_dir*2/8000,
+           serdes_w, media_w, media_usd, pairs, modules, fibers, note, pj };
+}
+function soSeg(id, name, media, gbps_dir, module_gbps, asm){
+  const m = D.MEDIA[media];
+  const both = A(asm,'conv.both_ends');
+  const links = module_gbps ? ceil(gbps_dir / module_gbps) : 0;       // one module/cable per port
+  const ends = links * (both ? 2 : 1);
+  const eq800 = module_gbps / 800;
+  const lanes = A(asm,'optics.lanes_per_module');
+  const lane_gbps = module_gbps / lanes;
+  const pj = m.id === 'cpo' ? A(asm,'serdes.xsr_pj') : A(asm,'serdes.lr_pj');
+  const serdes_w = links * lanes * 2 * lane_gbps * pj / 1000;
+  const media_w = ends * eq800 * A(asm, `media.${media}.w_end`);
+  const media_usd = ends * eq800 * A(asm, `media.${media}.usd_end`);
+  const modules = ends;
+  const fibers = m.family === 'optical' ? links * A(asm,'optics.fiber_pairs_per_module') * 2 : 0;
+  const pairs = m.family === 'copper' ? links * lanes * 2 : 0;
+  return { id, name, media, color:m.color, links, ends, modules, module_gbps, gbps_dir, tbs_bidir:gbps_dir*2/1000, serdes_w, media_w, media_usd, fibers, pairs, lanes, lane_gbps, pj };
+}
+
+function sum(a){ return a.reduce((x,y)=>x+y,0); }
+function fmt(v, d){
+  if (v === null || v === undefined || !isFinite(v)) return '—';
+  if (d === undefined) d = Math.abs(v) >= 100 ? 0 : (Math.abs(v) >= 10 ? 1 : 2);
+  return v.toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: 0 });
+}
+window.RE_COMPUTE = { compute, fmt };
+})();
+
+</script>
+<script>
+/* Rack Explorer — SVG drawing engine. Each view returns an SVG string drawn on an engineering
+   sheet: double frame, grid-free white paper, leader-line callouts, media colour code, title block. */
+(function(){
+const D = window.RE_DATA;
+const fmt = (v,d) => window.RE_COMPUTE.fmt(v,d);
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const M = id => D.MEDIA[id] || D.MEDIA.backplane;
+const dash = id => M(id).family === 'optical' ? 'stroke-dasharray="7 4"' : '';
+
+/* ---------- primitives ---------- */
+function rect(x,y,w,h,o={}){ return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${o.rx??0}" class="${o.cls||''}" ${o.style?`style="${o.style}"`:''} ${o.extra||''}/>`; }
+function text(x,y,s,o={}){ return `<text x="${x}" y="${y}" class="${o.cls||'t-label'}" text-anchor="${o.anchor||'start'}" ${o.style?`style="${o.style}"`:''} ${o.extra||''}>${esc(s)}</text>`; }
+function line(x1,y1,x2,y2,o={}){ return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="${o.cls||''}" ${o.style?`style="${o.style}"`:''} ${o.extra||''}/>`; }
+function path(d,o={}){ return `<path d="${d}" class="${o.cls||''}" ${o.style?`style="${o.style}"`:''} ${o.extra||''}/>`; }
+function g(inner,o={}){ return `<g class="${o.cls||''}" ${o.sel?`data-sel="${o.sel}"`:''} ${o.extra||''}>${inner}</g>`; }
+function hit(key, sel, inner, extraCls=''){ return g(inner, {cls:`hit ${extraCls} ${sel===key?'selected':''}`, sel:key}); }
+
+/* A silicon package: rounded rect, pin-1 notch, name + two sub lines. */
+function chip(x,y,w,h,name,sub1,sub2,fill,key,sel){
+  const inner = rect(x,y,w,h,{rx:6,cls:`${fill} ink sel-target`,style:'stroke-width:1.4'}) +
+    rect(x+8,y+8,w-16,h-16,{rx:3,cls:'f-none rule2',style:'stroke-width:1'}) +
+    path(`M${x+4} ${y+12} L${x+12} ${y+4}`,{cls:'ink2',style:'stroke-width:1.2'}) +
+    text(x+w/2,y+h/2-(sub1?4:-5),name,{cls:'t-chip',anchor:'middle'}) +
+    (sub1?text(x+w/2,y+h/2+11,sub1,{cls:'t-chip-s',anchor:'middle'}):'') +
+    (sub2?text(x+w/2,y+h/2+23,sub2,{cls:'t-chip-s',anchor:'middle'}):'');
+  return key ? hit(key, sel, inner) : g(inner);
+}
+/* Small module / connector block coloured by category or media. */
+function block(x,y,w,h,color,label,o={}){
+  return rect(x,y,w,h,{rx:2,cls:'sel-target',style:`fill:${color};fill-opacity:${o.op??.9};stroke:${color};stroke-width:1`}) +
+    (label?text(x+w/2,y+h/2+3.5,label,{cls:'t-tb',anchor:'middle',style:`fill:#fff;font-size:${o.fs||9}px;font-weight:600`}):'');
+}
+/* Leader-line callout: dot at (x1,y1), elbow to (x2,y2), label past the elbow. */
+function callout(x1,y1,x2,y2,lines,color,anchor='start'){
+  const dir = anchor==='end' ? -1 : 1;
+  const tx = x2 + dir*6;
+  let s = `<circle cx="${x1}" cy="${y1}" r="2.6" style="fill:${color}"/>` +
+    path(`M${x1} ${y1} L${x2 - dir*14} ${y2} L${x2} ${y2}`,{cls:'leader',style:`stroke:${color}`});
+  let arr = Array.isArray(lines)?lines.slice():[lines];
+  if (arr[0] && arr[0].length > 34){ const cut = arr[0].lastIndexOf(' ', 34); if (cut > 12){ arr = [arr[0].slice(0,cut), arr[0].slice(cut+1), ...arr.slice(1)]; } }
+  arr.forEach((l,i)=>{ s += text(tx, y2 + 4 + i*13 - (arr.length-1)*6.5, l, {cls:i?'t-small':'t-label', anchor, style:i?'':`fill:${color};font-weight:600`}); });
+  return s;
+}
+/* Dimension bracket with a centred label (engineering-drawing style). */
+function dimH(x1,x2,y,label){
+  return line(x1,y,x2,y,{cls:'dim'}) + line(x1,y-5,x1,y+5,{cls:'dim'}) + line(x2,y-5,x2,y+5,{cls:'dim'}) +
+    rect((x1+x2)/2-label.length*3.1-4,y-8,label.length*6.2+8,16,{cls:'f-sheet'}) + text((x1+x2)/2,y+4,label,{cls:'t-mono',anchor:'middle'});
+}
+function mediaLegend(x,y,ids,title='Interconnect media'){
+  let s = text(x,y,title,{cls:'t-eyebrow'});
+  [...new Set(ids)].forEach((id,i)=>{ const m=M(id); const yy=y+16+i*16;
+    s += line(x,yy,x+26,yy,{style:`stroke:${m.color};stroke-width:3`, extra:dash(id)}) + text(x+34,yy+4,m.name,{cls:'t-small'}); });
+  return s;
+}
+function titleBlock(W,H,ctx){
+  const w=540,h=58,x=W-16-w,y=H-16-h;
+  const c1=x, c2=x+150, c3=x+400;
+  return g(
+    rect(x,y,w,h,{cls:'f-sheet ink',style:'stroke-width:1.2'}) +
+    line(c2,y,c2,y+h,{cls:'ink'}) + line(c3,y,c3,y+h,{cls:'ink'}) + line(c3,y+h/2,x+w,y+h/2,{cls:'ink'}) + line(c2,y+h/2,c3,y+h/2,{cls:'rule'}) +
+    text(c1+8,y+16,'EDGEWATER RESEARCH',{cls:'t-eyebrow',style:'fill:var(--brand)'}) +
+    text(c1+8,y+34,'Rack Explorer',{cls:'t-tb-b'}) + text(c1+8,y+49,'Interconnect drawing set',{cls:'t-tb'}) +
+    text(c2+8,y+13,'DRAWING',{cls:'t-eyebrow'}) + text(c2+8,y+26,ctx.short||ctx.title,{cls:'t-tb-b'}) +
+    text(c2+8,y+41,'ARCHITECTURE',{cls:'t-eyebrow'}) + text(c2+8,y+53,ctx.arch,{cls:'t-tb'}) +
+    text(c3+8,y+13,'SHEET',{cls:'t-eyebrow'}) + text(x+w-8,y+24,ctx.sheet,{cls:'t-tb-b',anchor:'end'}) +
+    text(c3+8,y+41,'REV · CONF',{cls:'t-eyebrow'}) + text(x+w-8,y+53,`${ctx.rev} · ${ctx.conf}`,{cls:'t-tb',anchor:'end'})
+  );
+}
+function sheet(W,H,ctx,inner){
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(ctx.title)}">
+  <defs>
+    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" style="stroke:var(--ink-3);stroke-width:.8;opacity:.6"/></pattern>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--ink-2)"/></marker>
+  </defs>
+  ${rect(.5,.5,W-1,H-1,{cls:'f-sheet ink',style:'stroke-width:1.2'})}
+  ${rect(16,16,W-32,H-32,{cls:'f-none rule',style:'stroke-width:1'})}
+  ${text(28,44,ctx.title,{cls:'t-title'})}
+  ${text(28,62,ctx.sub,{cls:'t-sub'})}
+  ${inner}
+  ${titleBlock(W,H,ctx)}
+</svg>`;
+}
+function ctxFor(build, view, i, n){
+  const titles = {board:'Compute board — component & connector map', tray:'Compute and switch trays — plan view', rack:'Rack elevation — scale-up spine and scale-out exits', scaleup:'Scale-up fabric — topology and link budget', scaleout:'Scale-out network — NICs, optics and leaf layer'};
+  const shorts = {board:'Board component map', tray:'Tray plan view', rack:'Rack elevation', scaleup:'Scale-up fabric', scaleout:'Scale-out network'};
+  return { title: titles[view], short: shorts[view], sub:'', arch: build.name, sheet:`${i} / ${n}`, rev: new Date().toISOString().slice(0,10), conf: build.conf || 'M' };
+}
+function xpuShort(b){ return b.blocks.xpu.name.replace(/\s*\(.*\)$/,''); }
+
+/* =====================================================================
+   1. BOARD
+   ===================================================================== */
+function renderBoard(b, o, sel){
+  const bd = b.board, X = b.blocks.xpu, C = b.blocks.cpu, su = b.scaleup;
+  const nx = Math.max(1, bd.xpus|0), nc = bd.cpus|0, nm = nc ? (bd.mem_per_cpu|0) : 0;
+  const chipW = nx > 4 ? 96 : 130, chipH = chipW, gap = nx > 4 ? 18 : 30;
+  const rowW = nx*chipW + (nx-1)*gap;
+  const cpuW = 150, memW = 64, memGap = 10;
+  const cpuRowW = nc ? nc*cpuW + nm*(memW+memGap) + (nc-1)*40 : 0;
+  const bw = Math.max(560, Math.max(rowW, cpuRowW) + 140), bh = 470;
+  const W = Math.max(1300, bw + 780), H = 780;
+  const bx = Math.round((W - bw)/2), by = 120;
+  const ctx = ctxFor(b,'board',1,5); ctx.title = `${bd.name} — component & connector map`;
+  ctx.sub = `${nx} × ${X.name}${nc?` · ${nc} × ${C.name}`:''}${nm?` · ${nm*nc} × ${bd.mem_type}`:''} · ${b.rack.boards_per_tray} board(s) per compute tray · ${o.n.boards} per rack`;
+  let s = '';
+  // board
+  s += hit('board', sel, rect(bx,by,bw,bh,{rx:14,cls:'f-tray ink sel-target',style:'stroke-width:1.6'}) + rect(bx+10,by+10,bw-20,bh-20,{rx:9,cls:'f-none rule'}));
+  [[bx+18,by+18],[bx+bw-18,by+18],[bx+18,by+bh-18],[bx+bw-18,by+bh-18]].forEach(([x,y])=>{ s += `<circle cx="${x}" cy="${y}" r="4" class="f-sheet ink2" style="stroke-width:1"/>`; });
+  // XPU row + scale-up connectors on top edge
+  const rx0 = bx + (bw-rowW)/2, ry = by + 62;
+  const suColor = M(su.media_xpu_sw).color;
+  for (let i=0;i<nx;i++){
+    const x = rx0 + i*(chipW+gap);
+    s += chip(x, ry, chipW, chipH, xpuShort(b), `${X.hbm_gb} GB HBM · ${X.hbm_tbs} TB/s`, `${fmt(o.link.xpu_tbs_bidir,2)} TB/s ${su.name}`, 'f-xpu', 'xpu', sel);
+    // connector on top edge
+    const cw = Math.min(110, chipW-10);
+    s += hit('seg:'+(o.segments[0]?.id||'xpu_sw'), sel, block(x+(chipW-cw)/2, by-9, cw, 18, suColor, `${su.name}`) );
+    // trace bundle from chip to connector
+    for (let k=0;k<3;k++) s += line(x+chipW/2-8+k*8, ry, x+chipW/2-8+k*8, by+9, {style:`stroke:${suColor};stroke-width:1;opacity:.7`});
+  }
+  // callout for scale-up connector
+  const seg0 = o.segments[0];
+  s += callout(rx0+rowW-8, by-9, rx0+rowW+40, by-48, [`${su.name} connector × ${nx}`, `${su.links_per_xpu} links × ${su.lanes_per_link} lanes × ${su.lane_gbps}G per ${xpuShort(b)}`, `${M(su.media_xpu_sw).name}`], suColor);
+  s += dimH(rx0, rx0+rowW, ry+chipH+14, `${nx} × ${xpuShort(b)}  ·  ${fmt(o.link.xpu_lanes*nx)} SerDes lanes / direction`);
+  // CPU row
+  const cy = ry + chipH + 42;
+  if (nc){
+    let cx = bx + (bw-cpuRowW)/2;
+    for (let c=0;c<nc;c++){
+      const left = Math.floor(nm/2), right = nm-left;
+      for (let m=0;m<left;m++){ s += hit('mem',sel, rect(cx,cy,memW,118,{rx:5,cls:'f-mem ink sel-target'}) + rect(cx+6,cy+6,memW-12,106,{cls:'hatch rule2'}) + text(cx+memW/2,cy+64,bd.mem_type,{cls:'t-chip-s',anchor:'middle',extra:`transform="rotate(-90 ${cx+memW/2} ${cy+64})"`})); cx += memW+memGap; }
+      s += chip(cx, cy, cpuW, 118, C.name, C.cores?`${C.cores} cores`:'', C.mem, 'f-cpu', 'cpu', sel); cx += cpuW + memGap;
+      for (let m=0;m<right;m++){ s += hit('mem',sel, rect(cx,cy,memW,118,{rx:5,cls:'f-mem ink sel-target'}) + rect(cx+6,cy+6,memW-12,106,{cls:'hatch rule2'}) + text(cx+memW/2,cy+64,bd.mem_type,{cls:'t-chip-s',anchor:'middle',extra:`transform="rotate(-90 ${cx+memW/2} ${cy+64})"`})); cx += memW+memGap; }
+      cx += 30;
+    }
+    // C2C traces CPU↔GPU
+    s += text(bx+bw/2, cy+140, `${X.c2c !== '—' ? X.c2c : 'PCIe host link'} · ${C.c2c}`, {cls:'t-small',anchor:'middle'});
+  } else if (b.rack.switch_chips_per_compute_tray){
+    const k = b.rack.switch_chips_per_compute_tray, sw = b.blocks.sw, swW=150;
+    let cx = bx + (bw - (k*swW + (k-1)*30))/2;
+    for (let i=0;i<k;i++){ s += chip(cx, cy, swW, 100, sw.name.split(' (')[0], `${sw.ports} ports · ${fmt(o.link.link_gbps_dir)}G`, `${fmt(sw.tbs_bidir,1)} TB/s`, 'f-sw', 'sw', sel); cx += swW+30; }
+    s += text(bx+bw/2, cy+124, `${su.name} on baseboard PCB · ${fmt(o.topo.links_per_xpu_per_switch,0)} links per ${xpuShort(b)} per switch`, {cls:'t-small',anchor:'middle'});
+  } else {
+    s += text(bx+bw/2, cy+60, `No host CPU on this board — ${su.name} ${D.TOPOLOGIES[su.topology].name.toLowerCase()}`, {cls:'t-small',anchor:'middle'});
+  }
+  // side/bottom connectors from list
+  const conns = (bd.connectors||[]).map((c,i)=>({...c,i})).filter(c=>c.cat!=='scaleup');
+  const L = conns.filter(c=>c.side==='left'), R = conns.filter(c=>c.side==='right'), Bt = conns.filter(c=>c.side==='bottom'), T = conns.filter(c=>c.side==='top');
+  const place = (arr, side) => {
+    const n = arr.length; if(!n) return;
+    const span = bh - 80, step = Math.min(64, span/Math.max(1,n));
+    arr.forEach((c,j)=>{
+      const col = D.CONNECTOR_CATS[c.cat]?.color || '#888';
+      const y = by + 50 + j*step + step/2 - 14;
+      const x = side==='left' ? bx-8 : bx+bw-8;
+      s += hit('conn:'+c.i, sel, block(x, y, 16, 28, col, ''));
+      const lx = side==='left' ? bx-110 : bx+bw+110;
+      s += callout(side==='left'?x:x+16, y+14, lx, y+14, c.n, col, side==='left'?'end':'start');
+    });
+  };
+  place(L,'left'); place(R,'right');
+  Bt.forEach((c,j)=>{ const col = D.CONNECTOR_CATS[c.cat]?.color||'#888'; const n=Bt.length; const x = bx + bw*(j+1)/(n+1) - 20;
+    s += hit('conn:'+c.i, sel, block(x, by+bh-8, 40, 16, col, ''));
+    s += callout(x+20, by+bh+8, x+20 + (j%2?40:-40), by+bh+46+(j%2?18:0), c.n, col, j%2?'start':'end'); });
+  T.forEach((c,j)=>{ const col = D.CONNECTOR_CATS[c.cat]?.color||'#888'; const x = bx + 30 + j*90;
+    s += hit('conn:'+c.i, sel, block(x, by-8, 40, 16, col, '')); s += callout(x, by-8, x-30, by-46, c.n, col, 'end'); });
+  // legend
+  let ly = H-16-58-16*Object.keys(D.CONNECTOR_CATS).length - 30;
+  s += text(28, ly, 'Connector categories', {cls:'t-eyebrow'});
+  Object.entries(D.CONNECTOR_CATS).forEach(([k,c],i)=>{ s += rect(28, ly+10+i*16, 14, 9, {style:`fill:${c.color}`}) + text(50, ly+18+i*16, c.name, {cls:'t-small'}); });
+  s += text(28, H-30, 'Click any chip, connector or link to inspect and edit. Layout is schematic, not to scale.', {cls:'t-small'});
+  return sheet(W,H,ctx,s);
+}
+
+/* =====================================================================
+   2. TRAY
+   ===================================================================== */
+function renderTray(b, o, sel){
+  const r=b.rack, su=b.scaleup, so=b.scaleout, X=b.blocks.xpu, C=b.blocks.cpu, N=b.blocks.nic, P=b.blocks.dpu, SW=b.blocks.sw;
+  const W=1240, H= r.switch_trays ? 860 : 640;
+  const ctx = ctxFor(b,'tray',2,5);
+  ctx.sub = `${r.compute_trays} compute trays · ${r.xpus_per_tray} × ${xpuShort(b)} · ${r.cpus_per_tray} × ${C.name} · ${Math.round(r.xpus_per_tray*r.nics_per_xpu)} × ${N.name}` + (r.switch_trays?` · ${r.switch_trays} switch trays × ${r.switch_chips_per_tray} ${SW.name.split(' (')[0]}`:'');
+  let s='';
+  // ---- compute tray (plan view). Rear (top edge) = scale-up connectors; front (bottom edge) = NIC cages.
+  const tx=300, ty=110, tw=700, th=300;
+  s += text(tx, ty-14, `COMPUTE TRAY  ·  ×${r.compute_trays} per rack  ·  ${r.cooling}`, {cls:'t-eyebrow'});
+  s += hit('tray:compute', sel, rect(tx,ty,tw,th,{rx:4,cls:'f-tray ink sel-target',style:'stroke-width:1.6'}));
+  s += text(tx+tw+8, ty+12, 'REAR', {cls:'t-eyebrow'}); s += text(tx+tw+8, ty+th-4, 'FRONT', {cls:'t-eyebrow'});
+  // boards
+  const nb = Math.max(1, r.boards_per_tray|0), xpb = Math.ceil(r.xpus_per_tray/nb), cpb = Math.round(r.cpus_per_tray/nb*10)/10;
+  const boardGap = 24, boardW = (tw - 60 - (nb-1)*boardGap - (P.gbps&&r.dpus_per_tray?0:0))/nb, boardH = 170, bY = ty+54;
+  const suCol = M(su.media_xpu_sw).color;
+  for (let i=0;i<nb;i++){
+    const bX = tx+30 + i*(boardW+boardGap);
+    s += hit('board', sel, rect(bX,bY,boardW,boardH,{rx:6,cls:'f-sheet ink2 sel-target',style:'stroke-width:1.1'}));
+    s += text(bX+8,bY+14,b.board.name,{cls:'t-small'});
+    const cw = Math.min(84,(boardW-16-(xpb-1)*8)/xpb);
+    for (let k=0;k<xpb;k++){ const x=bX+8+k*(cw+8); s += chip(x,bY+22,cw,cw*0.8,xpuShort(b),'','','f-xpu','xpu',sel);
+      // rear connector per XPU
+      s += hit('seg:'+(o.segments[0]?.id||'xpu_sw'), sel, block(x+4, ty+8, cw-8, 14, suCol, '', {fs:8}));
+      s += line(x+cw/2, bY+22, x+cw/2, ty+22, {style:`stroke:${suCol};stroke-width:1.2;opacity:.8`}); }
+    if (cpb>0){ for (let k=0;k<Math.ceil(cpb);k++){ const x=bX+8+k*(cw*1.2+8); s += chip(x,bY+22+cw*0.8+12,cw*1.2,cw*0.75,C.name.split(' ')[0],'','','f-cpu','cpu',sel); }
+      for (let m=0;m<Math.min(4,C.mem_modules);m++){ const x=bX+8+Math.ceil(cpb)*(cw*1.2+8)+m*18; s += hit('mem',sel,rect(x,bY+22+cw*0.8+12,12,cw*0.75,{rx:2,cls:'f-mem ink2 sel-target'})); } }
+  }
+  // in-tray switches (HGX style)
+  if (r.switch_chips_per_compute_tray){
+    for (let i=0;i<r.switch_chips_per_compute_tray;i++){ const x = tx+tw-30-(i+1)*76; s += chip(x, bY+boardH+14, 70, 40, 'NVSW', `${SW.ports} p`, '', 'f-sw', 'sw', sel); }
+    s += callout(tx+tw-30-30, bY+boardH+54, tx+tw+40, bY+boardH+80, [`${r.switch_chips_per_compute_tray} × ${SW.name}`, `scale-up stays on the baseboard (${M(su.media_xpu_sw).name})`], M('pcb').color);
+  }
+  // front: NIC cages & DPUs & power
+  const nn = Math.round(r.xpus_per_tray*r.nics_per_xpu), nicCol = M(so.nic_media).color, dpuCol = M(so.dpu_media).color;
+  const modules = so.module_gbps ? Math.ceil(nn*N.gbps/so.module_gbps) : 0;
+  let fx = tx+30; const fy = ty+th-30;
+  for (let i=0;i<modules;i++){ s += hit('soseg:so_nic', sel, block(fx, fy, 34, 22, nicCol, `${so.module_gbps}G`, {fs:8})); fx += 40; }
+  if (nn) s += callout(tx+30+17, fy+22, tx+30-60, ty+th+50, [`${nn} × ${N.name} (${N.gbps}G)`, `→ ${modules} × ${so.module_gbps}G ${M(so.nic_media).short} ports`, `${fmt(nn*N.gbps/1000,1)} Tb/s scale-out per tray`], nicCol, 'end');
+  fx += 24;
+  for (let i=0;i<r.dpus_per_tray;i++){ s += hit('dpu', sel, block(fx, fy, 46, 22, dpuCol, 'DPU', {fs:8, op:.75})); fx += 52; }
+  if (r.dpus_per_tray) s += callout(fx-52+23, fy+22, fx+40, ty+th+50, [`${r.dpus_per_tray} × ${P.name} (${P.gbps}G)`, `front-end / storage network (${M(so.dpu_media).short})`], dpuCol);
+  // power & liquid
+  s += block(tx+tw-120, ty+8, 90, 14, D.CONNECTOR_CATS.power.color, '48 V / busbar', {fs:8});
+  if (/liquid/i.test(r.cooling)) { s += block(tx+tw-120, ty+28, 90, 12, '#3E8A5A', 'liquid in/out', {fs:8, op:.7}); }
+  // rear callout
+  s += callout(tx+30+((Math.min(64,(boardW-16-(xpb-1)*8)/xpb))/2), ty+8, tx-40, ty-40+14, [`${r.xpus_per_tray*su.links_per_xpu} ${su.name} links leave the tray`, `${fmt(r.xpus_per_tray*o.link.xpu_lanes)} lanes/dir · ${M(su.media_xpu_sw).name}`], suCol, 'end');
+  // right-hand summary
+  const sx = tx+tw+60; let sy = ty+40;
+  const kv = (k,v)=>{ s += text(sx, sy, k, {cls:'t-eyebrow'}) + text(sx, sy+15, v, {cls:'t-label'}); sy += 34; };
+  kv('PER TRAY', `${r.xpus_per_tray} × ${X.name}`);
+  kv('HOST', r.cpus_per_tray ? `${r.cpus_per_tray} × ${C.name}` : 'No host CPU in tray');
+  kv('SCALE-UP OUT', `${fmt(r.xpus_per_tray*o.link.xpu_tbs_bidir,1)} TB/s bidir`);
+  kv('SCALE-OUT OUT', `${fmt(nn*N.gbps/1000,1)} Tb/s (${nn} NIC ports)`);
+  kv('TRAY POWER (SILICON)', `${fmt((r.xpus_per_tray*X.tdp_w + r.cpus_per_tray*C.tdp_w + nn*N.tdp_w + r.dpus_per_tray*P.tdp_w)/1000,1)} kW`);
+  // ---- switch tray
+  if (r.switch_trays){
+    const sy0 = ty+th+120, sh = 200;
+    s += text(tx, sy0-14, `SWITCH TRAY  ·  ×${r.switch_trays} per rack  ·  ${SW.name}`, {cls:'t-eyebrow'});
+    s += hit('tray:switch', sel, rect(tx,sy0,tw,sh,{rx:4,cls:'f-tray ink sel-target',style:'stroke-width:1.6'}));
+    const k = r.switch_chips_per_tray, swW = Math.min(200, (tw-80-(k-1)*30)/k);
+    let cx = tx + (tw - (k*swW + (k-1)*30))/2;
+    const ports = SW.ports;
+    for (let i=0;i<k;i++){
+      s += chip(cx, sy0+70, swW, 90, SW.name.split(' (')[0], `${ports} × ${fmt(o.link.link_gbps_dir)}G ports`, `${fmt(SW.tbs_bidir,1)} TB/s`, 'f-sw', 'sw', sel);
+      // rear connectors: one block per 18 ports-ish
+      const nblk = Math.max(2, Math.min(9, Math.round(ports/8)));
+      for (let j=0;j<nblk;j++){ const bwid = (swW-8)/nblk - 3; s += hit('seg:'+(o.segments[0]?.id||'xpu_sw'), sel, block(cx+4+j*((swW-8)/nblk), sy0+8, bwid, 14, suCol, '', {fs:8})); s += line(cx+4+j*((swW-8)/nblk)+bwid/2, sy0+22, cx+4+j*((swW-8)/nblk)+bwid/2, sy0+70, {style:`stroke:${suCol};stroke-width:1;opacity:.7`}); }
+      cx += swW+30;
+    }
+    s += callout(tx + (tw - (k*swW + (k-1)*30))/2 + 10, sy0+8, tx-40, sy0-24, [`${k*ports} ${su.name} ports per tray → ${M(su.media_xpu_sw).name}`, `${fmt(o.topo.ports_avail)} ports in rack vs ${fmt(o.topo.links)} XPU links (${fmt(o.topo.util*100,0)}% used)`], suCol, 'end');
+    if (M(su.media_tray_tray).family==='optical' || su.topology==='intray'){}
+    s += block(tx+tw-120, sy0+8, 90, 14, D.CONNECTOR_CATS.power.color, '48 V / busbar', {fs:8});
+    s += text(tx+tw/2, sy0+sh-12, `No optics on the switch tray: the whole scale-up domain is one rack of ${o.n.xpus} XPUs on ${M(su.media_xpu_sw).name.toLowerCase()}.`, {cls:'t-small',anchor:'middle'});
+    if (M(su.media_xpu_sw).family==='optical') s = s.replace('No optics on the switch tray', 'Optical scale-up');
+  } else {
+    s += text(tx, ty+th+100, `No switch tray: ${D.TOPOLOGIES[su.topology].name}. ${D.TOPOLOGIES[su.topology].desc}`, {cls:'t-small'});
+  }
+  s += mediaLegend(28, H-16-58-16*3-40, [su.media_xpu_sw, so.nic_media, so.dpu_media].filter(Boolean));
+  return sheet(W,H,ctx,s);
+}
+
+/* =====================================================================
+   3. RACK
+   ===================================================================== */
+function trayU(b){ const r=b.rack; if (r.tray_u) return r.tray_u; const spare = r.rack_u - r.switch_trays - 6; return Math.max(1, Math.min(10, Math.floor(spare/Math.max(1,r.compute_trays)))); }
+function renderRack(b, o, sel){
+  const r=b.rack, su=b.scaleup, so=b.scaleout, N=b.blocks.nic, SW=b.blocks.sw, P=b.blocks.dpu;
+  const W=1240, H=900, ctx=ctxFor(b,'rack',3,5);
+  ctx.sub = `${o.n.xpus} × ${xpuShort(b)} · ${fmt(o.link.rack_tbs_bidir,0)} TB/s scale-up (${su.name}) · ${fmt(o.so.rack_tbs_dir,1)} Tb/s scale-out · ~${r.power_kw} kW · ${r.form}`;
+  let s='';
+  const U = Math.min(15, Math.floor(700/Math.max(24,r.rack_u)));
+  const rx=470, ry=90, rw=300, rh=r.rack_u*U;
+  s += hit('rack', sel, rect(rx,ry,rw,rh,{rx:3,cls:'f-rack ink sel-target',style:'stroke-width:1.8'}));
+  // U scale
+  for (let u=0;u<=r.rack_u;u+=(r.rack_u>40?6:4)){ const y=ry+rh-u*U; s += line(rx-6,y,rx,y,{cls:'ink2'}) + text(rx-10,y+3,`${u}U`,{cls:'t-mono',anchor:'end'}); }
+  // layout: power shelves top & bottom, compute upper, switch middle, compute lower
+  const tu = trayU(b), nPow = Math.max(2, Math.min(8, Math.ceil(r.power_kw/33)));
+  const powTop = Math.ceil(nPow/2), powBot = nPow-powTop;
+  const items=[]; let u=0;
+  for (let i=0;i<powTop;i++) items.push({t:'pow',u:1});
+  const upper = Math.ceil(r.compute_trays/2), lower = r.compute_trays-upper;
+  for (let i=0;i<upper;i++) items.push({t:'c',u:tu,i});
+  for (let i=0;i<r.switch_trays;i++) items.push({t:'s',u:1,i});
+  for (let i=0;i<lower;i++) items.push({t:'c',u:tu,i:upper+i});
+  for (let i=0;i<powBot;i++) items.push({t:'pow',u:1});
+  const totalU = items.reduce((a,x)=>a+x.u,0);
+  const scale = totalU > r.rack_u ? r.rack_u/totalU : 1;   // squeeze if the layout exceeds the rack
+  let y = ry + 6;
+  const suCol = M(su.media_xpu_sw).color, ttCol = M(su.media_tray_tray).color, extCol = M(su.media_ext||su.media_tray_tray).color, nicCol = M(so.nic_media).color;
+  const compY=[], swY=[];
+  items.forEach(it=>{
+    const h = it.u*U*scale - 2;
+    if (it.t==='pow'){ s += rect(rx+8,y,rw-16,h,{rx:1,cls:'f-pwr ink2',style:'stroke-width:.8'}); s += text(rx+rw/2,y+h/2+3,'PSU / power shelf',{cls:'t-tb',anchor:'middle'}); }
+    else if (it.t==='c'){ compY.push(y+h/2);
+      s += hit('tray:compute', sel, rect(rx+8,y,rw-16,h,{rx:1,cls:'f-tray ink sel-target',style:'stroke-width:.9'}) +
+        // XPU ticks
+        Array.from({length:Math.min(16,r.xpus_per_tray)},(_,k)=>rect(rx+16+k*((rw-40)/Math.min(16,r.xpus_per_tray)), y+2, (rw-40)/Math.min(16,r.xpus_per_tray)-3, Math.max(3,h-4), {rx:1,cls:'f-xpu ink2',style:'stroke-width:.5'})).join('') );
+      // scale-out exits on the front (left)
+      const modsPerTray = so.module_gbps ? Math.ceil(r.xpus_per_tray*r.nics_per_xpu*N.gbps/so.module_gbps) : 0;
+      if (modsPerTray) s += line(rx+8, y+h/2, rx-70, y+h/2, {style:`stroke:${nicCol};stroke-width:${Math.min(4,1+modsPerTray/3)};opacity:.85`, extra:dash(so.nic_media)});
+      // spine stubs on the rear (right)
+      if (su.topology==='switched') s += line(rx+rw-8, y+h/2, rx+rw+40, y+h/2, {style:`stroke:${suCol};stroke-width:${Math.min(5,1+r.xpus_per_tray*su.links_per_xpu/40)}`, extra:dash(su.media_xpu_sw)});
+    } else { swY.push(y+h/2);
+      s += hit('tray:switch', sel, rect(rx+8,y,rw-16,h,{rx:1,cls:'f-sw ink sel-target',style:'stroke-width:.9'}) + text(rx+rw/2,y+h/2+3,`${r.switch_chips_per_tray} × ${SW.name.split(' (')[0]}`,{cls:'t-tb',anchor:'middle'}) );
+      s += line(rx+rw-8, y+h/2, rx+rw+40, y+h/2, {style:`stroke:${suCol};stroke-width:${Math.min(6,1+r.switch_chips_per_tray*SW.ports/60)}`, extra:dash(su.media_xpu_sw)});
+    }
+    y += it.u*U*scale;
+  });
+  // ---- scale-up: spine (switched) or inter-tray links (torus / mesh)
+  const seg0 = o.segments.find(x=>x.id==='xpu_sw');
+  if (su.topology==='switched' && compY.length){
+    const top = Math.min(...compY, ...swY), bot = Math.max(...compY, ...swY);
+    s += hit('seg:xpu_sw', sel, rect(rx+rw+40, top-6, 14, bot-top+12, {rx:3,cls:'sel-target',style:`fill:${suCol};stroke:${suCol};fill-opacity:.85`}));
+    s += callout(rx+rw+54, top+(bot-top)*0.66, rx+rw+140, top+(bot-top)*0.66-30, [`${su.name} spine — ${M(su.media_xpu_sw).short}`, `${M(su.media_xpu_sw).name}`, `${fmt(seg0.links)} links · ${fmt(seg0.lanes_total)} lanes/dir · ${fmt(seg0.pairs)} twinax pairs`, `${fmt(o.link.rack_tbs_bidir,0)} TB/s bidirectional · longest run ≈ ${seg0.need_m} m (reach ${seg0.reach_m} m)`, `${fmt(o.topo.ports_avail)} switch ports for ${fmt(o.topo.links)} XPU links → ${fmt(o.topo.util*100,0)}% used`], suCol);
+  } else if (su.topology==='intray' || su.topology==='mesh'){
+    compY.forEach(cy=>{ s += line(rx+rw-8, cy, rx+rw+30, cy, {style:`stroke:${suCol};stroke-width:3`}); s += path(`M${rx+rw+30} ${cy-8} L${rx+rw+30} ${cy+8}`,{style:`stroke:${suCol};stroke-width:3`}); });
+    const segId = o.segments[0]?.id;
+    s += callout(rx+rw+30, compY[Math.floor(compY.length/2)], rx+rw+120, compY[Math.floor(compY.length/2)]+40, [`${su.name} stays inside each tray (${M(su.media_xpu_sw).short})`, `${fmt(o.topo.links)} links total · scale-up domain = ${o.topo.domain} XPUs`, `nothing between trays except the scale-out network`], suCol);
+    void segId;
+  } else { // torus
+    const segI = o.segments.find(x=>x.id==='inter'), segW = o.segments.find(x=>x.id==='wrap'), segA = o.segments.find(x=>x.id==='intra');
+    for (let i=0;i<compY.length-1;i++){ s += path(`M${rx+rw-8} ${compY[i]} C ${rx+rw+40} ${compY[i]}, ${rx+rw+40} ${compY[i+1]}, ${rx+rw-8} ${compY[i+1]}`, {cls:'f-none', style:`stroke:${ttCol};stroke-width:2.2`, extra:dash(su.media_tray_tray)}); }
+    if (segI) s += hit('seg:inter', sel, rect(rx+rw+2, compY[0]-4, 30, compY[compY.length-1]-compY[0]+8, {cls:'f-none sel-target',style:'stroke:transparent'}));
+    if (segI) s += callout(rx+rw+28, (compY[0]+compY[compY.length-1])/2+40, rx+rw+120, (compY[0]+compY[compY.length-1])/2+20, [`Tray ↔ tray torus edges — ${M(su.media_tray_tray).short}`, `${M(su.media_tray_tray).name} · ${fmt(segI.links)} links · ${fmt(segI.lanes_total)} lanes/dir`, segA?`+ ${fmt(segA.links)} in-tray edges on ${M(segA.media).name.toLowerCase()}`:''], ttCol);
+    if (segW){
+      // wrap links exit to an OCS / next-rack box
+      const ox = rx+rw+330, oy = ry+rh/2-50;
+      s += hit('seg:wrap', sel, rect(ox, oy, 150, 100, {rx:4,cls:'f-sheet ink sel-target',style:'stroke-width:1.2'}) + text(ox+75, oy+42, SW.ports? SW.name.split(' (')[0] : 'Next rack', {cls:'t-chip',anchor:'middle'}) + text(ox+75, oy+60, `${fmt(segW.links)} wrap links`, {cls:'t-chip-s',anchor:'middle'}) + text(ox+75, oy+74, M(segW.media).name, {cls:'t-chip-s',anchor:'middle'}));
+      [compY[0], compY[Math.floor(compY.length/2)], compY[compY.length-1]].forEach(cy=>{ s += path(`M${rx+rw-8} ${cy} C ${rx+rw+200} ${cy}, ${ox-60} ${oy+50}, ${ox} ${oy+50}`, {cls:'f-none',style:`stroke:${extCol};stroke-width:2`, extra:dash(segW.media)}); });
+      s += callout(ox+75, oy, ox+75, oy-40, [`Wrap-around edges leave the rack`, `${fmt(segW.modules)} optical modules · ${fmt(segW.fibers)} fibers`], extCol, 'middle');
+    }
+  }
+  // ---- scale-out: leaf switch stack on the left
+  const S=o.so, lx=90, lw=200;
+  const leafN = Math.max(1, S.leaf_switches||1), leafH = Math.min(40, 220/leafN), ly0 = ry+rh/2 - leafN*leafH/2 - 40;
+  s += line(rx-70, compY[0]||ry+40, rx-70, compY[compY.length-1]||ry+rh-40, {style:`stroke:${nicCol};stroke-width:6;opacity:.75`, extra:dash(so.nic_media)});
+  s += path(`M${rx-70} ${ry+rh/2} L${lx+lw} ${ry+rh/2}`, {style:`stroke:${nicCol};stroke-width:6;opacity:.75`, extra:dash(so.nic_media)+' marker-end="url(#arr)"'});
+  s += hit('soseg:so_nic', sel, rect(rx-78, (compY[0]||ry)-10, 16, (compY[compY.length-1]||ry+rh)-(compY[0]||ry)+20, {cls:'f-none sel-target',style:'stroke:transparent'}));
+  for (let i=0;i<leafN;i++){ s += hit('leaf', sel, rect(lx, ly0+i*leafH, lw, leafH-4, {rx:2,cls:'f-sw ink sel-target',style:'stroke-width:.9'}) + text(lx+lw/2, ly0+i*leafH+leafH/2+2, b.blocks.so_sw.name.split(' (')[0], {cls:'t-tb',anchor:'middle'})); }
+  s += text(lx, ly0-10, `SCALE-OUT LEAF  ·  ${leafN} × ${b.blocks.so_sw.name.split(' (')[0]} (share)`, {cls:'t-eyebrow'});
+  s += callout(rx-70, ry+rh/2+60, rx-110, ry+rh/2+110, [`${S.nics} × ${N.name} → ${fmt(S.modules_nic_side)} × ${so.module_gbps}G ${M(so.nic_media).short}`, `${fmt(S.rack_tbs_dir,1)} Tb/s per direction · ${fmt(S.per_xpu_gbps)} Gb/s per XPU`, `${M(so.nic_media).name}${M(so.nic_media).family==='optical'?` · ${fmt(o.so_segments[0]?.fibers||0)} fibers`:''}`], nicCol, 'end');
+  if (o.n.dpus){ const dCol=M(so.dpu_media).color; s += path(`M${rx+8} ${ry+rh-30} L${lx+lw} ${ry+rh-30}`, {style:`stroke:${dCol};stroke-width:2;opacity:.8`, extra:dash(so.dpu_media)+' marker-end="url(#arr)"'});
+    s += hit('soseg:so_dpu', sel, rect(lx, ry+rh-44, lw, 28, {rx:2,cls:'f-dpu ink sel-target',style:'stroke-width:.9'}) + text(lx+lw/2, ry+rh-26, `Front-end · ${o.n.dpus} × ${P.name}`, {cls:'t-tb',anchor:'middle'})); }
+  // headline figures right
+  const hx = W-16-24, hy = ry+10; const hv=(k,v,i)=>text(hx, hy+i*40, k, {cls:'t-eyebrow',anchor:'end'}) + text(hx, hy+i*40+18, v, {cls:'t-tb-b',anchor:'end',style:'font-size:16px'});
+  s += hv('RACK', `${o.n.xpus} × ${xpuShort(b)} · ${o.n.cpus} CPU · ${r.rack_u}U`, 0) + hv('SCALE-UP', `${fmt(o.link.xpu_tbs_bidir,2)} TB/s per XPU · ${fmt(o.link.rack_tbs_bidir,0)} TB/s rack`, 1) + hv('SCALE-OUT', `${fmt(S.per_xpu_gbps)} Gb/s per XPU · ${fmt(S.rack_tbs_dir,1)} Tb/s rack`, 2) + hv('POWER', `${r.power_kw} kW stated · ${fmt(o.power.computed_rack_kw,0)} kW computed`, 3) + hv('INTERCONNECT POWER', `${fmt(o.power.interconnect_kw,1)} kW (${fmt(o.power.interconnect_share*100,0)}% of rack)`, 4);
+  s += mediaLegend(28, ry+rh-16*5-10, [su.media_xpu_sw, su.media_tray_tray, su.media_ext, so.nic_media, so.dpu_media].filter(Boolean));
+  return sheet(W,H,ctx,s);
+}
+
+/* =====================================================================
+   4. SCALE-UP FABRIC
+   ===================================================================== */
+function renderScaleUp(b, o, sel, selXpu){
+  const r=b.rack, su=b.scaleup, SW=b.blocks.sw, T=o.topo, W=1240, H=840, ctx=ctxFor(b,'scaleup',4,5);
+  ctx.sub = `${T.name} · ${o.link.formula}`;
+  let s='';
+  const suCol = M(su.media_xpu_sw).color;
+  const selIdx = Math.max(0, Math.min(o.n.xpus-1, selXpu|0));
+  if (su.topology==='switched'){
+    const trays=r.compute_trays, per=r.xpus_per_tray, blockRows=Math.min(trays,24), nBlocks=Math.ceil(trays/blockRows);
+    const cell = Math.min(20, 560/blockRows), cw = cell-3;
+    const gx0 = 60, gy0 = 120, blockW = per*cell + 40;
+    const swN = o.n.sw_chips, swH = Math.min(26, 560/Math.max(1,swN)), swX = W-540, swY0 = gy0 + (560 - swN*swH)/2;
+    const pos = [];
+    for (let t=0;t<trays;t++){ const bI=Math.floor(t/blockRows), row=t%blockRows; for (let k=0;k<per;k++){ const idx=t*per+k; pos[idx]={x:gx0+bI*blockW+k*cell, y:gy0+row*cell}; } }
+    // tray bundles (faint)
+    for (let t=0;t<trays;t++){ const p=pos[t*per+per-1]; const bI=Math.floor(t/blockRows); if (bI!==nBlocks-1) continue; s += path(`M${p.x+cw+4} ${p.y+cw/2} C ${(p.x+swX)/2} ${p.y+cw/2}, ${(p.x+swX)/2} ${swY0+swN*swH/2}, ${swX} ${swY0+swN*swH/2}`, {cls:'f-none',style:`stroke:${suCol};stroke-width:1;opacity:.18`}); }
+    // selected XPU links to each switch
+    const p = pos[selIdx];
+    const lpps = T.links_per_xpu_per_switch;
+    for (let j=0;j<swN;j++){ const sy = swY0+j*swH+swH/2-2; s += path(`M${p.x+cw} ${p.y+cw/2} C ${p.x+cw+200} ${p.y+cw/2}, ${swX-200} ${sy}, ${swX} ${sy}`, {cls:'f-none',style:`stroke:${suCol};stroke-width:${Math.min(3,0.8+lpps)};opacity:.85`, extra:dash(su.media_xpu_sw)}); }
+    // XPUs
+    for (let i=0;i<o.n.xpus;i++){ const q=pos[i]; s += g(rect(q.x,q.y,cw,cw,{rx:2,cls:`f-xpu ink2 sel-target ${i===selIdx?'':''}`,style:`stroke-width:.6;${i===selIdx?'fill:var(--select);stroke:var(--select)':''}`}), {cls:'hit', sel:`xpuidx:${i}`}); }
+    // tray labels
+    for (let t=0;t<trays;t+= (trays>24?4:1)){ const q=pos[t*per]; s += text(q.x-6, q.y+cw/2+3, `T${t+1}`, {cls:'t-mono',anchor:'end',style:'font-size:9px'}); }
+    s += text(gx0, gy0-14, `${o.n.xpus} × ${xpuShort(b)} in ${trays} trays`, {cls:'t-eyebrow'});
+    // switches
+    for (let j=0;j<swN;j++){ s += hit('sw', sel, rect(swX, swY0+j*swH, 150, swH-4, {rx:2,cls:'f-sw ink sel-target',style:'stroke-width:.8'}) + (swH>=14?text(swX+75, swY0+j*swH+swH/2+2, `${SW.name.split(' (')[0]} #${j+1} · ${SW.ports}p`, {cls:'t-tb',anchor:'middle'}):'')); }
+    s += text(swX, gy0-14, `${swN} × ${SW.name} in ${r.switch_trays} trays`, {cls:'t-eyebrow'});
+    // annotations
+    const ax = swX+190, ay = gy0+10;
+    const lines = [
+      ['SELECTED XPU', `#${selIdx+1} in tray ${Math.floor(selIdx/per)+1} — click any XPU to move`],
+      ['PER XPU', `${su.links_per_xpu} links → ${fmt(lpps,2)} per switch × ${swN} switches`],
+      ['PER LINK', `${su.lanes_per_link} × ${su.lane_gbps}G = ${fmt(o.link.link_gbps_dir)} Gb/s per direction`],
+      ['PER SWITCH', `${SW.ports} ports · ${fmt(SW.ports/ Math.max(1,per*trays),2)} per XPU · ${fmt(SW.tbs_bidir,1)} TB/s`],
+      ['FABRIC', `${fmt(T.links)} links vs ${fmt(T.ports_avail)} ports → ${T.util<=1.0001?'non-blocking, one tier':'OVERSUBSCRIBED'}`],
+      ['MEDIA', `${M(su.media_xpu_sw).name} · ${fmt(o.segments[0].pairs)} twinax pairs`],
+      ['AGGREGATE', `${fmt(o.link.rack_tbs_bidir,0)} TB/s bidirectional across ${o.n.xpus} XPUs`],
+    ];
+    lines.forEach(([k,v],i)=>{ s += text(ax, ay+i*44, k, {cls:'t-eyebrow'}) + text(ax, ay+i*44+16, v, {cls:'t-label'}); });
+    // utilisation bar
+    const bx=ax, by=ay+lines.length*44+10; s += text(bx,by,'SWITCH PORT UTILISATION',{cls:'t-eyebrow'}) + rect(bx,by+8,200,10,{cls:'f-panel rule'}) + rect(bx,by+8,Math.min(200,200*T.util),10,{style:`fill:${T.util>1.0001?'var(--bad)':(T.util<.85?'var(--warn)':'var(--good)')}`}) + text(bx+208,by+17,`${fmt(T.util*100,0)}%`,{cls:'t-mono'});
+  }
+  else if (su.topology==='intray'){
+    const per=r.xpus_per_tray, k=r.switch_chips_per_compute_tray, cw=76, gap=22, x0=(W-(per*cw+(per-1)*gap))/2, y0=160;
+    for (let i=0;i<per;i++){ const x=x0+i*(cw+gap); s += g(chip(x,y0,cw,60,`${xpuShort(b)} ${i+1}`,'','','f-xpu',null,null),{cls:'hit',sel:`xpuidx:${i}`}); if (i===selIdx) s += rect(x-3,y0-3,cw+6,66,{rx:7,cls:'f-none',style:'stroke:var(--select);stroke-width:2'}); }
+    const swW=180, sx0=(W-(k*swW+(k-1)*60))/2, sy=y0+260;
+    for (let j=0;j<k;j++){ const sx=sx0+j*(swW+60); s += chip(sx,sy,swW,70,SW.name.split(' (')[0],`${SW.ports} ports`,`${fmt(SW.tbs_bidir,1)} TB/s`,'f-sw','sw',sel);
+      for (let i=0;i<per;i++){ const x=x0+i*(cw+gap)+cw/2; const isSel = i===selIdx; s += path(`M${x} ${y0+60} C ${x} ${y0+160}, ${sx+swW/2} ${sy-100}, ${sx+swW/2} ${sy}`, {cls:'f-none',style:`stroke:${suCol};stroke-width:${isSel?2.5:1};opacity:${isSel?.95:.3}`}); }
+      s += text(sx+swW/2, sy+92, `${fmt(T.links_per_xpu_per_switch,0)} links per XPU per switch · ${fmt(T.links_per_xpu_per_switch*o.link.link_gbps_dir)} Gb/s`, {cls:'t-small',anchor:'middle'}); }
+    s += text(W/2, sy+150, `Scale-up domain = ${per} XPUs on one baseboard (${M(su.media_xpu_sw).name}). ${r.compute_trays} such domains per rack, joined only by the scale-out network.`, {cls:'t-label',anchor:'middle'});
+    s += text(W/2, sy+170, `Per XPU: ${o.link.formula}`, {cls:'t-small',anchor:'middle'});
+  }
+  else if (su.topology==='mesh'){
+    const k=r.xpus_per_tray, cx=W/2, cy=440, R=210;
+    const P=[]; for (let i=0;i<k;i++){ const a=-Math.PI/2+i*2*Math.PI/k; P.push({x:cx+R*Math.cos(a), y:cy+R*Math.sin(a)}); }
+    for (let i=0;i<k;i++) for (let j=i+1;j<k;j++){ const hot = i===selIdx||j===selIdx; s += line(P[i].x,P[i].y,P[j].x,P[j].y,{style:`stroke:${suCol};stroke-width:${hot?2.4:1};opacity:${hot?.95:.25}`}); }
+    P.forEach((p,i)=>{ s += g(chip(p.x-38,p.y-24,76,48,`${xpuShort(b)} ${i+1}`,'','','f-xpu',null,null),{cls:'hit',sel:`xpuidx:${i}`}); if(i===selIdx) s+=rect(p.x-41,p.y-27,82,54,{rx:8,cls:'f-none',style:'stroke:var(--select);stroke-width:2'}); });
+    s += text(W/2, cy+R+80, `Full mesh: each XPU has ${k-1} direct links (${fmt(o.link.link_gbps_dir)} Gb/s each) · ${fmt(T.links)} links per rack on ${M(su.media_xpu_sw).name}`, {cls:'t-label',anchor:'middle'});
+    s += text(W/2, cy+R+100, `Per XPU: ${o.link.formula}`, {cls:'t-small',anchor:'middle'});
+  }
+  else { // torus
+    const dims=T.dims, side=T.side, per=r.xpus_per_tray;
+    const layers = dims===3 ? side : 1, sp = dims===3 ? Math.min(46, 900/(layers*side+layers)) : Math.min(60, 700/side);
+    const layerW = side*sp, gapL = 40, totalW = layers*layerW + (layers-1)*gapL, x0=(W-totalW)/2, y0=200;
+    const idx=(x,y,z)=> z*side*side + y*side + x;
+    const P=(x,y,z)=>({x:x0+z*(layerW+gapL)+x*sp+sp/2, y:y0+y*sp+sp/2});
+    const tray=i=>Math.floor(i/per);
+    const colFor=(i,j,wrap)=>{ if (wrap && su.wrap_external) return {c:M(su.media_ext||su.media_tray_tray).color, d:dash(su.media_ext||su.media_tray_tray)}; return tray(i)===tray(j)?{c:M(su.media_xpu_sw).color,d:dash(su.media_xpu_sw)}:{c:M(su.media_tray_tray).color,d:dash(su.media_tray_tray)}; };
+    const edge=(a,b2,pa,pb,wrap,axis)=>{ const hot = a===selIdx||b2===selIdx; const {c,d}=colFor(a,b2,wrap); const w = hot?2.6:1.2, op = hot?1:.45;
+      if (!wrap) return line(pa.x,pa.y,pb.x,pb.y,{style:`stroke:${c};stroke-width:${w};opacity:${op}`,extra:d});
+      // wrap: arc outside the grid
+      const off = axis==='x'? {dx:0,dy:-sp*0.55} : axis==='y' ? {dx:sp*0.55,dy:0} : {dx:0,dy:sp*0.7};
+      return path(`M${pa.x} ${pa.y} C ${pa.x+off.dx} ${pa.y+off.dy}, ${pb.x+off.dx} ${pb.y+off.dy}, ${pb.x} ${pb.y}`,{cls:'f-none',style:`stroke:${c};stroke-width:${w};opacity:${op}`,extra:d}); };
+    let edges='', nodes='';
+    for (let z=0;z<layers;z++) for (let y=0;y<side;y++) for (let x=0;x<side;x++){
+      const i=idx(x,y,z), p=P(x,y,z);
+      // +x neighbour
+      const xn = (x+1)%side; edges += edge(i, idx(xn,y,z), p, P(xn,y,z), xn===0, 'x');
+      const yn = (y+1)%side; edges += edge(i, idx(x,yn,z), p, P(x,yn,z), yn===0, 'y');
+      if (dims===3){ const zn=(z+1)%side; const j=idx(x,y,zn); if (i===selIdx||j===selIdx) edges += edge(i,j,p,P(x,y,zn), zn===0, 'z'); }
+      nodes += g(rect(p.x-9,p.y-9,18,18,{rx:3,cls:'f-xpu ink2 sel-target',style:`stroke-width:.7;${i===selIdx?'fill:var(--select);stroke:var(--select)':''}`}),{cls:'hit',sel:`xpuidx:${i}`});
+    }
+    s += edges + nodes;
+    for (let z=0;z<layers;z++) s += text(x0+z*(layerW+gapL)+layerW/2, y0-16, dims===3?`plane z=${z+1} · trays ${Math.floor(z*side*side/per)+1}–${Math.ceil((z+1)*side*side/per)}`:`${side}×${side} torus`, {cls:'t-eyebrow',anchor:'middle'});
+    const ly = y0 + side*sp + 70;
+    const segs = o.segments.map(sg=>`${sg.name}: ${fmt(sg.links)} links on ${M(sg.media).name.toLowerCase()}`).join('   ·   ');
+    s += text(W/2, ly, `${dims}D torus of ${side}${dims===3?'×'+side:''}×${side} = ${o.n.xpus} chips · ${su.links_per_xpu} neighbours each · ${fmt(T.links)} edges`, {cls:'t-label',anchor:'middle'});
+    s += text(W/2, ly+20, segs, {cls:'t-small',anchor:'middle'});
+    s += text(W/2, ly+40, `Per chip: ${o.link.formula}. Z-axis edges are drawn for the selected chip only.`, {cls:'t-small',anchor:'middle'});
+  }
+  s += mediaLegend(28, H-16-58-16*3-40, [su.media_xpu_sw, su.media_tray_tray, su.media_ext].filter(Boolean));
+  return sheet(W,H,ctx,s);
+}
+
+/* =====================================================================
+   5. SCALE-OUT
+   ===================================================================== */
+function renderScaleOut(b, o, sel){
+  const r=b.rack, so=b.scaleout, S=o.so, N=b.blocks.nic, P=b.blocks.dpu, SS=b.blocks.so_sw, W=1240, H=720, ctx=ctxFor(b,'scaleout',5,5);
+  ctx.sub = `${S.nics} × ${N.name} · ${fmt(S.per_xpu_gbps)} Gb/s per XPU · ${fmt(S.rack_tbs_dir,1)} Tb/s per rack per direction · scale-up : scale-out = ${fmt(S.ratio_su_so,1)} : 1`;
+  let s='';
+  const nicCol=M(so.nic_media).color, dCol=M(so.dpu_media).color, seg=o.so_segments.find(x=>x.id==='so_nic'), dseg=o.so_segments.find(x=>x.id==='so_dpu');
+  // rack block
+  const rx=80, ry=120, rw=220, rh=400;
+  s += hit('rack', sel, rect(rx,ry,rw,rh,{rx:4,cls:'f-rack ink sel-target',style:'stroke-width:1.4'}));
+  const n=Math.min(r.compute_trays,24), th=(rh-20)/n;
+  for (let i=0;i<n;i++){ s += rect(rx+10, ry+10+i*th, rw-20, th-3, {rx:1,cls:'f-tray ink2',style:'stroke-width:.6'}); }
+  s += text(rx+rw/2, ry-12, `${b.name} · ${o.n.xpus} × ${xpuShort(b)}`, {cls:'t-eyebrow',anchor:'middle'});
+  // NIC column
+  const nx=rx+rw+60, nn=Math.min(S.nics, 36), nh=(rh)/Math.max(1,nn);
+  for (let i=0;i<nn;i++){ s += hit('nic', sel, rect(nx, ry+i*nh, 60, Math.max(3,nh-3), {rx:1,cls:'f-nic ink2 sel-target',style:'stroke-width:.6'})); s += line(rx+rw, ry+i*nh+nh/2, nx, ry+i*nh+nh/2, {cls:'rule'}); }
+  s += text(nx+30, ry-12, `${S.nics} × ${N.name}${nn<S.nics?` (${nn} drawn)`:''}`, {cls:'t-eyebrow',anchor:'middle'});
+  // modules bundle → leaf
+  const lx=W-420, lw=220, leafN=Math.max(1,S.leaf_switches||1), lh=Math.min(56,(rh-20)/leafN), ly0=ry+(rh-leafN*lh)/2;
+  const mods=Math.min(seg?seg.links:0, 36);
+  for (let i=0;i<mods;i++){ const y1=ry+(i+.5)*(rh/mods), j=Math.floor(i/mods*leafN), y2=ly0+j*lh+lh/2 + ((i%3)-1)*4; s += path(`M${nx+60} ${y1} C ${nx+260} ${y1}, ${lx-200} ${y2}, ${lx} ${y2}`, {cls:'f-none',style:`stroke:${nicCol};stroke-width:1.4;opacity:.7`, extra:dash(so.nic_media)}); }
+  s += hit('soseg:so_nic', sel, rect(nx+70, ry, lx-nx-80, rh, {cls:'f-none sel-target',style:'stroke:transparent'}));
+  for (let j=0;j<leafN;j++){ s += hit('leaf', sel, rect(lx, ly0+j*lh, lw, lh-6, {rx:3,cls:'f-sw ink sel-target',style:'stroke-width:1'}) + text(lx+lw/2, ly0+j*lh+lh/2-2+ (lh>30?-4:2), SS.name.split(' (')[0], {cls:'t-tb-b',anchor:'middle',style:'font-size:12px'}) + (lh>30?text(lx+lw/2, ly0+j*lh+lh/2+11, `${SS.ports} × ${SS.port_gbps}G · ${SS.tbs} Tb/s`, {cls:'t-tb',anchor:'middle'}):'')); }
+  s += text(lx+lw/2, ry-12, `${leafN} × leaf (${so.oversub}:1 · ${fmt(S.leaf_ports_needed,0)} downlinks)`, {cls:'t-eyebrow',anchor:'middle'});
+  // spine
+  s += rect(lx, ry-90, lw, 40, {rx:3,cls:'f-none ink2',style:'stroke-dasharray:5 4;stroke-width:1'}) + text(lx+lw/2, ry-66, `Spine / pod fabric  (${M(SS.media).name})`, {cls:'t-small',anchor:'middle'});
+  s += line(lx+lw/2, ry-50, lx+lw/2, ly0, {cls:'ink2',style:'stroke-dasharray:5 4'});
+  // module callout
+  if (seg) s += callout((nx+60+lx)/2, ry+rh/2, (nx+60+lx)/2, ry+rh+36, [`${fmt(seg.links)} × ${so.module_gbps}G links · ${fmt(seg.modules)} ${M(so.nic_media).family==='optical'?'modules':'cable ends'} (${M(so.nic_media).name})`, `${S.lanes} lanes × ${fmt(S.lane_gbps)}G per port · ${fmt(seg.fibers||seg.pairs)} ${M(so.nic_media).family==='optical'?'fibers':'twinax pairs'}`, `${fmt(seg.media_w/1000,2)} kW media + ${fmt(seg.serdes_w/1000,2)} kW SerDes · ≈ $${fmt(seg.media_usd/1000,0)}k`], nicCol, 'middle');
+  // DPU path
+  if (dseg){ const dy = ry+rh+112; s += path(`M${rx+rw} ${dy} L${lx} ${dy}`, {style:`stroke:${dCol};stroke-width:2;opacity:.8`, extra:dash(so.dpu_media)+' marker-end="url(#arr)"'});
+    s += hit('soseg:so_dpu', sel, rect(lx, dy-18, lw, 36, {rx:3,cls:'f-dpu ink sel-target',style:'stroke-width:1'}) + text(lx+lw/2, dy+5, `Front-end / storage · ${o.n.dpus} × ${P.name}`, {cls:'t-tb',anchor:'middle'}));
+    s += text(rx+rw+10, dy-8, `${fmt(S.dpu_gbps_dir/1000,1)} Tb/s · ${fmt(dseg.modules)} × ${dseg.module_gbps}G ${M(so.dpu_media).short} (DPU front-end)`, {cls:'t-small'}); }
+  // right column stats
+  const ax=W-170, ay=ry+10;
+  [['PER XPU', `${fmt(S.per_xpu_gbps)} Gb/s`],['PER RACK', `${fmt(S.rack_tbs_dir,1)} Tb/s / dir`],['SU : SO', `${fmt(S.ratio_su_so,1)} : 1`],['MODULES', `${fmt(seg?seg.modules:0)}`],['OPTICS POWER', `${fmt(o.power.so_media_kw,2)} kW`]].forEach(([k,v],i)=>{ s += text(ax, ay+i*52, k, {cls:'t-eyebrow'}) + text(ax, ay+i*52+22, v, {cls:'t-tb-b',style:'font-size:18px'}); });
+  s += mediaLegend(28, H-16-58-16*2-40, [so.nic_media, so.dpu_media, SS.media].filter(Boolean));
+  return sheet(W,H,ctx,s);
+}
+
+/* ---------- Compare (HTML table) ---------- */
+function renderCompare(rows, currentId){
+  const cols = ['Architecture','XPUs','Per-XPU scale-up','Rack scale-up','Fabric','Scale-up media','Lanes / XPU','Copper pairs','Scale-out / XPU','Rack scale-out','Optics modules','Interconnect kW','Interconnect $ / XPU','Rack kW','Conf'];
+  let h = `<div class="cmp-wrap" style="padding:16px 20px"><h2 style="font:600 22px var(--disp);margin:0 0 4px">Cross-architecture comparison</h2><div class="note" style="margin-bottom:12px">All rows are recomputed with the current assumptions panel, so a change to a media price or SerDes pJ/bit moves every column. The highlighted row is the build you are editing.</div><div style="overflow-x:auto;background:var(--sheet);border:1px solid var(--rule);border-radius:6px"><table class="grid"><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+  rows.forEach(({b,o})=>{
+    const optics = o.segments.concat(o.so_segments).reduce((a,x)=>a+(D.MEDIA[x.media].family==='optical'?x.modules:0),0);
+    const pairs = o.segments.reduce((a,x)=>a+x.pairs,0);
+    h += `<tr ${b.id===currentId?'style="background:var(--select-tint)"':''}><td><b>${esc(b.name)}</b><br><span class="c">${esc(b.vendor)} · ${esc(b.status||'')} ${esc(b.year||'')}</span></td><td class="n">${o.n.xpus}<br><span class="c">${esc(xpuShort(b))}</span></td><td class="n">${fmt(o.link.xpu_tbs_bidir,2)} TB/s</td><td class="n">${fmt(o.link.rack_tbs_bidir,0)} TB/s</td><td>${esc(b.scaleup.name)}<br><span class="c">${esc(D.TOPOLOGIES[b.scaleup.topology].name.split(',')[0])}</span></td><td>${o.segments.map(x=>`<span style="color:${x.color}">■</span> ${esc(D.MEDIA[x.media].short)}`).join(' ')}</td><td class="n">${o.link.xpu_lanes}</td><td class="n">${fmt(pairs)}</td><td class="n">${fmt(o.so.per_xpu_gbps)} Gb/s</td><td class="n">${fmt(o.so.rack_tbs_dir,1)} Tb/s</td><td class="n">${fmt(optics)}</td><td class="n">${fmt(o.power.interconnect_kw,1)}</td><td class="n">$${fmt(o.cost.interconnect_per_xpu/1000,1)}k</td><td class="n">${b.rack.power_kw}</td><td><span class="pill ${b.conf}">${b.conf}</span></td></tr>`;
+  });
+  h += '</tbody></table></div></div>';
+  return h;
+}
+
+window.RE_RENDER = { renderBoard, renderTray, renderRack, renderScaleUp, renderScaleOut, renderCompare, esc };
+})();
+
+</script>
+<script>
+/* Rack Explorer — application layer: state, panels, events, persistence. */
+(function(){
+const D = window.RE_DATA, C = window.RE_COMPUTE, R = window.RE_RENDER;
+const fmt = C.fmt, esc = R.esc;
+const $ = s => document.querySelector(s);
+const LS = { get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} } };
+const clone = x => JSON.parse(JSON.stringify(x));
+
+/* ---------------- state ---------------- */
+const asmRows = D.defaultAssumptions();
+const asmDefault = {}; asmRows.forEach(r=>asmDefault[r.key]=r.value);
+const state = {
+  presetId:'gb200_nvl72', build:null, out:null,
+  asm: Object.assign({}, asmDefault, LS.get('re.asm', {})),
+  view:'rack', side:'inspect', sel:'rack', selXpu:0, zoom:1,
+  custom: LS.get('re.custom', []),
+};
+function allPresets(){ return D.PRESETS.concat(state.custom); }
+function makeBuild(p){
+  const b = clone(p);
+  b.blocks = b.blocks || {};
+  const pick = (tbl, id, fallback) => clone(tbl[id] || tbl[fallback]);
+  b.blocks.xpu  = b.blocks.xpu  || pick(D.XPUS, p.xpu, 'custom');
+  b.blocks.cpu  = b.blocks.cpu  || pick(D.CPUS, p.cpu, 'none');
+  b.blocks.nic  = b.blocks.nic  || pick(D.NICS, p.nic, 'none');
+  b.blocks.dpu  = b.blocks.dpu  || pick(D.DPUS, p.dpu, 'none');
+  b.blocks.sw   = b.blocks.sw   || pick(D.SU_SWITCHES, p.scaleup.sw, 'none');
+  b.blocks.so_sw= b.blocks.so_sw|| pick(D.SO_SWITCHES, p.scaleout.so_sw, 'th5');
+  return b;
+}
+function loadPreset(id){
+  const p = allPresets().find(x=>x.id===id) || D.PRESETS[0];
+  state.presetId = p.id; state.build = makeBuild(p); state.sel='rack'; state.selXpu=0;
+  recompute(); renderAll(); writeHash();
+}
+function recompute(){ state.out = C.compute(state.build, state.asm); }
+function get(obj, path){ return path.split('.').reduce((o,k)=>o?.[k], obj); }
+function set(obj, path, v){ const ks=path.split('.'); const last=ks.pop(); const o=ks.reduce((o,k)=>o[k]??(o[k]={}), obj); o[last]=v; }
+
+/* ---------------- rendering: rail ---------------- */
+function renderPresets(){
+  const el = $('#preset-list'); const cur = state.presetId;
+  el.innerHTML = allPresets().map(p=>`<button class="preset" aria-pressed="${p.id===cur}" data-preset="${p.id}">
+    <span class="pn">${esc(p.name)}</span><span class="pill ${p.conf}">${p.conf}</span>
+    <span class="pv">${esc(p.vendor)} · ${esc(p.status||'custom')}${p.year?' · '+esc(p.year):''}</span>
+    <span class="pt">${esc(p.tagline||'')}</span>${p.custom?`<button class="del" data-del="${p.id}" title="Delete this saved build">×</button>`:''}</button>`).join('');
+  const sel = $('#preset-select'); sel.innerHTML = allPresets().map(p=>`<option value="${p.id}" ${p.id===cur?'selected':''}>${esc(p.name)}</option>`).join('');
+}
+function renderBlocks(){
+  const b = state.build;
+  const grp = (title, tbl, type, sub, color) => `<details class="blockgrp" ${type==='xpu'?'open':''}><summary>${title}<span></span></summary>` +
+    Object.values(tbl).map(x=>`<button class="block" data-block="${type}" data-id="${x.id}" aria-pressed="${b.blocks[type]?.id===x.id}">
+      <span class="sw" style="background:${color}"></span><span><div class="bn">${esc(x.name)}</div><div class="bs">${esc(sub(x))}</div></span><span class="use">use</span></button>`).join('') + '</details>';
+  $('#blocks').innerHTML =
+    grp('XPU / GPU / accelerator', D.XPUS, 'xpu', x=>`${x.hbm_gb} GB · ${x.hbm_tbs} TB/s · ${x.tdp_w} W`, 'var(--brand)') +
+    grp('Host CPU', D.CPUS, 'cpu', x=>x.cores?`${x.cores} cores · ${x.mem}`:'—', '#7A4FB5') +
+    grp('Scale-out NIC', D.NICS, 'nic', x=>x.gbps?`${x.gbps} Gb/s · ${x.form}`:'—', '#2F8F83') +
+    grp('DPU / front-end', D.DPUS, 'dpu', x=>x.gbps?`${x.gbps} Gb/s · ${x.tdp_w} W`:'—', '#3E8A5A') +
+    grp('Scale-up switch ASIC', D.SU_SWITCHES, 'sw', x=>x.ports?`${x.ports} ports · ${x.tbs_bidir} TB/s`:'—', '#B26A2B') +
+    grp('Scale-out switch', D.SO_SWITCHES, 'so_sw', x=>`${x.ports} × ${x.port_gbps}G · ${x.tbs} Tb/s`, '#E07A1F');
+}
+function renderMediaLegend(){
+  $('#media-legend').innerHTML = D.MEDIA_ORDER.map(id=>{ const m=D.MEDIA[id]; return `<div class="media-row" title="${esc(m.note)}"><span class="line ${m.family}" style="border-color:${m.color}"></span><span>${esc(m.name)}</span><span class="fam">${m.family}</span></div>`; }).join('');
+}
+
+/* ---------------- rendering: centre ---------------- */
+function bw(tbs){ return state.asm['conv.bidir']==='bidirectional' ? {v:tbs, u:'TB/s', s:'bidirectional'} : {v:tbs/2, u:'TB/s', s:'per direction'}; }
+function renderStats(){
+  const o=state.out, b=state.build, su=b.scaleup, T=o.topo, S=o.so, P=o.power;
+  const per = bw(o.link.xpu_tbs_bidir), rack = bw(o.link.rack_tbs_bidir);
+  const pairs = o.segments.reduce((a,s)=>a+s.pairs,0), mods = o.segments.reduce((a,s)=>a+s.modules,0);
+  const swTile = T.ports_avail!==undefined ? {cls: T.util>1.0001?'bad':(T.util<.85?'warn':'good'), v:`${fmt(T.util*100,0)}<small>%</small>`, s:`${fmt(T.links)} links / ${fmt(T.ports_avail)} ports`, k:'Switch ports'} : {cls:'', v:`${fmt(T.links)}`, s:`${D.TOPOLOGIES[su.topology].name.split(',')[0]} · no switch`, k:'Fabric edges'};
+  const tiles = [
+    {k:'Scale-up / XPU', v:`${fmt(per.v,2)}<small>${per.u}</small>`, s:`${su.links_per_xpu} × ${su.lanes_per_link} × ${su.lane_gbps}G · ${per.s}`},
+    {k:'Rack scale-up', v:`${fmt(rack.v,0)}<small>${rack.u}</small>`, s:`${o.n.xpus} × ${b.blocks.xpu.name.split(' (')[0]} · ${su.name}`},
+    swTile,
+    {k: pairs?'Copper pairs':'Scale-up modules', v: pairs?fmt(pairs):fmt(mods), s: o.segments.map(s=>D.MEDIA[s.media].short).filter((x,i,a)=>a.indexOf(x)===i).join(' + ')},
+    {k:'Scale-out / XPU', v:`${fmt(S.per_xpu_gbps)}<small>Gb/s</small>`, s:`${b.blocks.nic.name} · SU:SO ${fmt(S.ratio_su_so,1)}:1`},
+    {k:'Rack scale-out', v:`${fmt(S.rack_tbs_dir,1)}<small>Tb/s</small>`, s:`${fmt(S.modules_nic_side)} × ${b.scaleout.module_gbps}G ${D.MEDIA[b.scaleout.nic_media].short}`},
+    {k:'Interconnect kW', v:`${fmt(P.interconnect_kw,1)}<small>kW</small>`, s:`${fmt(P.interconnect_share*100,0)}% of ${fmt(P.computed_rack_kw,0)} kW computed`},
+    {k:'Interconnect $', v:`$${fmt(o.cost.interconnect/1000,0)}<small>k</small>`, s:`$${fmt(o.cost.interconnect_per_xpu/1000,1)}k per XPU · est.`},
+    {k:'Rack power', v:`${fmt(b.rack.power_kw,0)}<small>kW</small>`, s:`stated · ${fmt(P.silicon_kw,0)} kW silicon TDP`},
+  ];
+  $('#stats').innerHTML = tiles.map(t=>`<div class="stat ${t.cls||''}"><span class="k">${t.k}</span><span class="v">${t.v}</span><span class="s">${esc(t.s)}</span></div>`).join('');
+  $('#notices').innerHTML = o.warnings.map(w=>`<div class="notice ${w.lvl}"><b>${w.lvl==='err'?'check':w.lvl}</b><span>${esc(w.text)}</span></div>`).join('');
+}
+function renderCanvas(){
+  const el = $('#canvas'), b=state.build, o=state.out, sel=state.sel;
+  let html='';
+  switch(state.view){
+    case 'board': html = R.renderBoard(b,o,sel); break;
+    case 'tray': html = R.renderTray(b,o,sel); break;
+    case 'rack': html = R.renderRack(b,o,sel); break;
+    case 'scaleup': html = R.renderScaleUp(b,o,sel,state.selXpu); break;
+    case 'scaleout': html = R.renderScaleOut(b,o,sel); break;
+    case 'compare': { const rows = allPresets().map(p=>{ const bb = p.id===state.presetId ? b : makeBuild(p); return {b:bb,o:C.compute(bb,state.asm)}; }); html = R.renderCompare(rows, state.presetId); break; }
+  }
+  el.innerHTML = html;
+  el.style.width = state.view==='compare' ? 'calc(100% - 28px)' : `calc((100% - 28px) * ${state.zoom})`;
+  document.querySelectorAll('#view-tabs button').forEach(bt=>bt.setAttribute('aria-selected', bt.dataset.view===state.view));
+}
+
+/* ---------------- rendering: side panel ---------------- */
+function kv(pairs){ return `<div class="kv">${pairs.filter(p=>p).map(([k,v,dim])=>`<span class="k">${esc(k)}</span><span class="v ${dim?'dim':''}">${v}</span>`).join('')}</div>`; }
+function inp(label, path, opts={}){
+  const v = get(state.build, path);
+  const base = get(allPresets().find(p=>p.id===state.presetId)||{}, path.replace(/^blocks\./,'__'));
+  if (opts.select){ return `<label>${esc(label)}${opts.small?`<small>${esc(opts.small)}</small>`:''}</label><select data-path="${path}">${opts.select.map(([val,lab])=>`<option value="${val}" ${String(val)===String(v)?'selected':''}>${esc(lab)}</option>`).join('')}</select>`; }
+  if (opts.bool){ return `<label>${esc(label)}${opts.small?`<small>${esc(opts.small)}</small>`:''}</label><select data-path="${path}" data-type="bool"><option value="true" ${v?'selected':''}>yes</option><option value="false" ${!v?'selected':''}>no</option></select>`; }
+  const type = opts.text ? 'text' : 'number';
+  return `<label>${esc(label)}${opts.small?`<small>${esc(opts.small)}</small>`:''}</label><input type="${type}" data-path="${path}" value="${esc(v)}" ${type==='number'?`step="${opts.step||'any'}" min="${opts.min??0}"`:''} class="${base!==undefined && base!==v?'changed':''}">`;
+}
+function mediaSel(label, path, small){ return inp(label, path, {select: D.MEDIA_ORDER.map(id=>[id, D.MEDIA[id].name]), small}); }
+function conf(c){ return `<span class="pill ${c}">${c}</span>`; }
+
+function renderInspector(){
+  const b=state.build, o=state.out, sel=state.sel||'rack', su=b.scaleup, so=b.scaleout, L=o.link;
+  const X=b.blocks.xpu, Cp=b.blocks.cpu, N=b.blocks.nic, P=b.blocks.dpu, SW=b.blocks.sw, SS=b.blocks.so_sw;
+  const head = (t, s, c) => `<div class="panel-h"><h2>${esc(t)}</h2>${c?conf(c):''}</div>${s?`<div class="hint" style="padding-top:0">${esc(s)}</div>`:''}`;
+  const per = bw(L.xpu_tbs_bidir);
+  let h='';
+  const [kind, arg] = sel.split(':');
+  if (kind==='xpu'){
+    h += head(X.name, `${X.vendor} · accelerator package · ${o.n.xpus} per rack`, X.conf);
+    h += `<div class="sec"><h4>Scale-up link budget</h4><div class="formula">${esc(L.formula)}</div>${kv([['SerDes lanes per XPU (per direction)', fmt(L.xpu_lanes)],['Link rate per direction', `${fmt(L.link_gbps_dir)} Gb/s`],['Vendor figure', su.vendor_bidir_tbs?`${su.vendor_bidir_tbs} TB/s bidir`:'—', !su.vendor_bidir_tbs],['Scale-out per XPU', `${fmt(o.so.per_xpu_gbps)} Gb/s`],['Scale-up : scale-out', `${fmt(o.so.ratio_su_so,1)} : 1`],['HBM per XPU', `${X.hbm_gb} GB · ${X.hbm_tbs} TB/s`],['HBM : NVLink-class ratio', `${fmt(X.hbm_tbs / Math.max(0.01,L.xpu_tbs_bidir),1)} : 1`]])}</div>`;
+    h += `<div class="sec"><h4>Edit fabric</h4><div class="form">${inp('Links per XPU','scaleup.links_per_xpu',{step:1,min:1})}${inp('Lanes per link','scaleup.lanes_per_link',{step:1,min:1})}${inp('Lane rate','scaleup.lane_gbps',{small:'Gb/s per lane per direction',step:'any'})}${inp('Vendor bidirectional figure','scaleup.vendor_bidir_tbs',{small:'TB/s, for the consistency check'})}</div></div>`;
+    h += `<div class="sec"><h4>Edit package</h4><div class="form">${inp('Name','blocks.xpu.name',{text:true})}${inp('Dies per package','blocks.xpu.dies',{step:1})}${inp('HBM capacity','blocks.xpu.hbm_gb',{small:'GB'})}${inp('HBM bandwidth','blocks.xpu.hbm_tbs',{small:'TB/s'})}${inp('FP8 dense','blocks.xpu.fp8_pf',{small:'PFLOPS'})}${inp('FP4 dense','blocks.xpu.fp4_pf',{small:'PFLOPS'})}${inp('TDP','blocks.xpu.tdp_w',{small:'W'})}</div><div class="note small" style="margin-top:6px">${esc(X.note||'')} ${esc(X.c2c && X.c2c!=='—' ? '· '+X.c2c : '')}</div></div>`;
+  } else if (kind==='cpu'){
+    h += head(Cp.name, `${Cp.vendor} · host CPU · ${o.n.cpus} per rack`, Cp.conf);
+    h += `<div class="sec">${kv([['Cores', Cp.cores],['Memory', esc(Cp.mem)],['CPU ↔ XPU link', esc(Cp.c2c)],['XPUs per CPU', fmt(o.n.xpus/Math.max(1,o.n.cpus),1)],['TDP', `${Cp.tdp_w} W`]])}</div>`;
+    h += `<div class="sec"><h4>Edit</h4><div class="form">${inp('Name','blocks.cpu.name',{text:true})}${inp('Cores','blocks.cpu.cores',{step:1})}${inp('Memory','blocks.cpu.mem',{text:true})}${inp('Memory modules drawn','blocks.cpu.mem_modules',{step:1})}${inp('TDP','blocks.cpu.tdp_w',{small:'W'})}${inp('CPUs per tray','rack.cpus_per_tray',{step:1})}</div></div>`;
+  } else if (kind==='mem'){
+    h += head(`${b.board.mem_type} memory`, 'Host memory on the compute board');
+    h += `<div class="sec">${kv([['Per CPU', esc(Cp.mem)],['Modules drawn per CPU', b.board.mem_per_cpu]])}<div class="form" style="margin-top:8px">${inp('Memory type label','board.mem_type',{text:true})}${inp('Modules per CPU','board.mem_per_cpu',{step:1})}</div></div>`;
+  } else if (kind==='nic'){
+    h += head(N.name, `${N.vendor} · scale-out NIC · ${o.n.nics} per rack`, N.conf);
+    h += `<div class="sec">${kv([['Port speed', `${N.gbps} Gb/s`],['Form factor', esc(N.form)],['Host interface', esc(N.pcie)],['NICs per XPU', b.rack.nics_per_xpu],['Rack scale-out', `${fmt(o.so.rack_tbs_dir,1)} Tb/s per direction`],['Modules NIC-side', fmt(o.so.modules_nic_side)],['TDP', `${N.tdp_w} W`]])}</div>`;
+    h += `<div class="sec"><h4>Edit</h4><div class="form">${inp('Name','blocks.nic.name',{text:true})}${inp('Port speed','blocks.nic.gbps',{small:'Gb/s'})}${inp('TDP','blocks.nic.tdp_w',{small:'W'})}${inp('NICs per XPU','rack.nics_per_xpu',{step:'any'})}${mediaSel('Media','scaleout.nic_media')}${inp('Module / port speed','scaleout.module_gbps',{select:[[400,'400G'],[800,'800G'],[1600,'1.6T'],[3200,'3.2T']]})}</div></div>`;
+  } else if (kind==='dpu'){
+    h += head(P.name, `${P.vendor} · DPU · ${o.n.dpus} per rack`, P.conf);
+    h += `<div class="sec">${kv([['Port speed', `${P.gbps} Gb/s`],['Per tray', b.rack.dpus_per_tray],['Front-end bandwidth', `${fmt(o.so.dpu_gbps_dir/1000,1)} Tb/s`],['TDP', `${P.tdp_w} W`]])}<div class="note small" style="margin-top:6px">${esc(P.note||'')}</div></div>`;
+    h += `<div class="sec"><h4>Edit</h4><div class="form">${inp('Name','blocks.dpu.name',{text:true})}${inp('Port speed','blocks.dpu.gbps',{small:'Gb/s'})}${inp('DPUs per tray','rack.dpus_per_tray',{step:1})}${mediaSel('Media','scaleout.dpu_media')}${inp('TDP','blocks.dpu.tdp_w',{small:'W'})}</div></div>`;
+  } else if (kind==='sw'){
+    const T=o.topo;
+    h += head(SW.name, `${SW.vendor} · scale-up switch ASIC · ${o.n.sw_chips} per rack`, SW.conf);
+    h += `<div class="sec"><div class="formula">${esc(`${o.n.sw_chips} ASICs × ${SW.ports} ports = ${fmt(T.ports_avail)} ports  vs  ${o.n.xpus} XPUs × ${su.links_per_xpu} links = ${fmt(T.links)} links  →  ${fmt(T.util*100,0)}% used`)}</div>${kv([['Ports per ASIC', SW.ports],['Port rate', `${fmt(L.link_gbps_dir)} Gb/s per direction`],['SerDes per ASIC', SW.serdes?`${SW.serdes} × ${SW.serdes_gbps}G`:'—'],['ASIC bandwidth (bidir)', `${fmt(SW.tbs_bidir,1)} TB/s`],['Links per XPU per ASIC', fmt(T.links_per_xpu_per_switch,2)],['ASICs required', T.chips_required],['Switch trays', `${b.rack.switch_trays} × ${b.rack.switch_chips_per_tray}` + (b.rack.switch_chips_per_compute_tray?` + ${b.rack.switch_chips_per_compute_tray} per compute tray`:'')],['TDP per ASIC', `${SW.tdp_w} W`]])}<div class="note small" style="margin-top:6px">${esc(SW.note||'')}</div></div>`;
+    h += `<div class="sec"><h4>Edit</h4><div class="form">${inp('Name','blocks.sw.name',{text:true})}${inp('Ports per ASIC','blocks.sw.ports',{step:1})}${inp('ASIC bandwidth','blocks.sw.tbs_bidir',{small:'TB/s bidir (label only)'})}${inp('TDP','blocks.sw.tdp_w',{small:'W'})}${inp('Switch trays','rack.switch_trays',{step:1})}${inp('ASICs per switch tray','rack.switch_chips_per_tray',{step:1})}${inp('ASICs per compute tray','rack.switch_chips_per_compute_tray',{step:1,small:'baseboard NVSwitch style'})}</div></div>`;
+  } else if (kind==='seg'){
+    const s = o.segments.find(x=>x.id===arg) || o.segments[0]; if (!s){ h += head('No scale-up segment',''); }
+    else { const m=D.MEDIA[s.media]; const pathKey = s.id==='xpu_sw'||s.id==='mesh'||s.id==='intra' ? 'scaleup.media_xpu_sw' : (s.id==='inter' ? 'scaleup.media_tray_tray' : 'scaleup.media_ext');
+      h += head(s.name, `${m.name} · ${su.name}`, m.conf);
+      h += `<div class="sec"><div class="formula">${esc(`${fmt(s.links)} links × ${su.lanes_per_link} lanes × ${su.lane_gbps}G = ${fmt(s.gbps_dir/1000,1)} Tb/s per direction = ${fmt(s.tbs_bidir,1)} TB/s bidirectional`)}</div>
+        ${kv([['Links', fmt(s.links)],['Ends counted', fmt(s.ends)],['Lanes per direction', fmt(s.lanes_total)], m.family==='copper'?['Twinax pairs', fmt(s.pairs)]:['Optical modules', fmt(s.modules)], m.family==='optical'?['Fibers', fmt(s.fibers)]:null,['Reach needed / available', `${s.need_m} m / ${s.reach_m} m`],['Media power', `${fmt(s.media_w/1000,2)} kW`],['SerDes power', `${fmt(s.serdes_w/1000,2)} kW @ ${s.pj} pJ/bit`],['Media cost (est.)', `$${fmt(s.media_usd/1000,0)}k`]])}
+        <div class="note small" style="margin-top:6px">${esc(s.note)} ${esc(m.note)}</div></div>`;
+      h += `<div class="sec"><h4>Change media</h4><div class="form">${mediaSel('Media for this segment', pathKey)}${inp('Lane rate','scaleup.lane_gbps',{small:'Gb/s per lane'})}${inp('Lanes per link','scaleup.lanes_per_link',{step:1})}</div><div class="hint" style="padding:6px 0 0">Power and cost per 800G end come from the Assumptions tab.</div></div>`; }
+  } else if (kind==='soseg'){
+    const s = o.so_segments.find(x=>x.id===arg) || o.so_segments[0]; if (!s){ h += head('No scale-out network','Set a NIC and NICs per XPU in Build.'); }
+    else { const m=D.MEDIA[s.media]; const isNic = s.id==='so_nic';
+      h += head(s.name, `${m.name} · ${isNic?N.name:P.name}`, m.conf);
+      h += `<div class="sec"><div class="formula">${esc(isNic?`${o.n.nics} NICs × ${N.gbps}G = ${fmt(s.gbps_dir/1000,1)} Tb/s → ${fmt(s.links)} × ${s.module_gbps}G ports → ${fmt(s.modules)} ${m.family==='optical'?'modules':'cable ends'}`:`${o.n.dpus} DPUs × ${P.gbps}G = ${fmt(s.gbps_dir/1000,1)} Tb/s → ${fmt(s.links)} × ${s.module_gbps}G ports`)}</div>
+        ${kv([['Ports', fmt(s.links)],['Lanes × rate per port', `${s.lanes} × ${fmt(s.lane_gbps)}G`], m.family==='optical'?['Fibers', fmt(s.fibers)]:['Twinax pairs', fmt(s.pairs)],['Media power', `${fmt(s.media_w/1000,2)} kW`],['SerDes power', `${fmt(s.serdes_w/1000,2)} kW @ ${s.pj} pJ/bit`],['Media cost (est.)', `$${fmt(s.media_usd/1000,0)}k`], isNic?['Leaf switches (share)', `${o.so.leaf_switches} × ${SS.name}`]:null])}
+        <div class="note small" style="margin-top:6px">${esc(m.note)}</div></div>`;
+      h += `<div class="sec"><h4>Change</h4><div class="form">${mediaSel('Media', isNic?'scaleout.nic_media':'scaleout.dpu_media')}${isNic?inp('Port speed','scaleout.module_gbps',{select:[[400,'400G'],[800,'800G'],[1600,'1.6T'],[3200,'3.2T']]}):''}${isNic?inp('Leaf oversubscription','scaleout.oversub',{small:'downlinks : uplinks'}):''}</div></div>`; }
+  } else if (kind==='leaf'){
+    h += head(SS.name, `${SS.vendor} · scale-out leaf · ${o.so.leaf_switches} needed (share)`, SS.conf);
+    h += `<div class="sec">${kv([['Radix', `${SS.ports} × ${SS.port_gbps}G`],['Throughput', `${SS.tbs} Tb/s`],['Native media', esc(D.MEDIA[SS.media].name)],['Downlinks needed', fmt(o.so.leaf_ports_needed,0)],['Oversubscription', `${so.oversub}:1`]])}<div class="form" style="margin-top:8px">${inp('Leaf switch','scaleout.so_sw',{select:Object.values(D.SO_SWITCHES).map(x=>[x.id,x.name])})}${inp('Oversubscription','scaleout.oversub')}</div></div>`;
+  } else if (kind==='board'){
+    const bd=b.board;
+    h += head(bd.name, `${bd.xpus} XPU + ${bd.cpus} CPU per board · ${b.rack.boards_per_tray} per tray · ${o.n.boards} per rack`);
+    h += `<div class="sec"><div class="form">${inp('Board name','board.name',{text:true})}${inp('XPUs per board','board.xpus',{step:1})}${inp('CPUs per board','board.cpus',{step:1})}${inp('Memory modules per CPU','board.mem_per_cpu',{step:1})}${inp('Memory type','board.mem_type',{text:true})}${inp('Boards per tray','rack.boards_per_tray',{step:1})}</div></div>`;
+    h += `<div class="sec"><h4>Connectors</h4><div class="conn-list">${(bd.connectors||[]).map((c,i)=>`<div class="conn-item"><input data-path="board.connectors.${i}.n" value="${esc(c.n)}"><select data-path="board.connectors.${i}.side">${['top','left','right','bottom'].map(s=>`<option ${c.side===s?'selected':''}>${s}</option>`).join('')}</select><select data-path="board.connectors.${i}.cat">${Object.entries(D.CONNECTOR_CATS).map(([k,v])=>`<option value="${k}" ${c.cat===k?'selected':''}>${esc(v.name)}</option>`).join('')}</select><button data-conn-del="${i}" title="Remove">×</button></div>`).join('')}</div><div class="row" style="margin-top:8px"><button class="btn small" id="conn-add">+ Add connector</button></div></div>`;
+  } else if (kind==='conn'){
+    const c = b.board.connectors[+arg]; const cat = D.CONNECTOR_CATS[c?.cat];
+    h += head(c?.n||'Connector', cat?cat.name:'');
+    h += `<div class="sec"><div class="form">${inp('Label',`board.connectors.${arg}.n`,{text:true})}${inp('Side',`board.connectors.${arg}.side`,{select:['top','left','right','bottom'].map(s=>[s,s])})}${inp('Category',`board.connectors.${arg}.cat`,{select:Object.entries(D.CONNECTOR_CATS).map(([k,v])=>[k,v.name])})}</div></div>`;
+  } else if (kind==='tray'){
+    const r=b.rack; const isC = arg==='compute';
+    if (isC){ h += head('Compute tray', `${r.compute_trays} per rack · ${r.xpus_per_tray} × ${X.name.split(' (')[0]} · ${r.cpus_per_tray} × ${Cp.name}`);
+      h += `<div class="sec">${kv([['Boards', `${r.boards_per_tray} × ${b.board.name}`],['NICs', `${Math.round(r.xpus_per_tray*r.nics_per_xpu)} × ${N.name}`],['DPUs', `${r.dpus_per_tray} × ${P.name}`],['Scale-up out of tray', `${fmt(r.xpus_per_tray*L.xpu_tbs_bidir,1)} TB/s · ${fmt(r.xpus_per_tray*L.xpu_lanes)} lanes/dir`],['Scale-out out of tray', `${fmt(r.xpus_per_tray*r.nics_per_xpu*N.gbps/1000,1)} Tb/s`],['Silicon power', `${fmt((r.xpus_per_tray*X.tdp_w + r.cpus_per_tray*Cp.tdp_w)/1000,1)} kW`],['Cooling', esc(r.cooling)]])}</div>`;
+      h += `<div class="sec"><h4>Edit</h4><div class="form">${inp('Compute trays per rack','rack.compute_trays',{step:1})}${inp('XPUs per tray','rack.xpus_per_tray',{step:1})}${inp('CPUs per tray','rack.cpus_per_tray',{step:1})}${inp('Boards per tray','rack.boards_per_tray',{step:1})}${inp('NICs per XPU','rack.nics_per_xpu',{step:'any'})}${inp('DPUs per tray','rack.dpus_per_tray',{step:1})}${inp('Tray height','rack.tray_u',{small:'U (blank = auto)',step:1})}${inp('Cooling','rack.cooling',{text:true})}</div></div>`; }
+    else { h += head('Switch tray', `${r.switch_trays} per rack · ${r.switch_chips_per_tray} × ${SW.name}`);
+      h += `<div class="sec">${kv([['Ports per tray', fmt(r.switch_chips_per_tray*SW.ports)],['Bandwidth per tray', `${fmt(r.switch_chips_per_tray*SW.tbs_bidir,1)} TB/s`],['Rear media', esc(D.MEDIA[su.media_xpu_sw].name)],['Power per tray (ASIC)', `${fmt(r.switch_chips_per_tray*SW.tdp_w/1000,2)} kW`]])}</div>`;
+      h += `<div class="sec"><h4>Edit</h4><div class="form">${inp('Switch trays','rack.switch_trays',{step:1})}${inp('ASICs per tray','rack.switch_chips_per_tray',{step:1})}${inp('Switch ASIC','scaleup.sw',{select:Object.values(D.SU_SWITCHES).map(x=>[x.id,x.name])})}${mediaSel('XPU → switch media','scaleup.media_xpu_sw')}</div></div>`; }
+  } else { // rack
+    const r=b.rack;
+    h += head(b.name, `${b.vendor} · ${b.status||'custom build'} · ${b.year||''}`, b.conf);
+    h += `<div class="sec"><div class="note">${esc(b.tagline||'')}</div></div>`;
+    h += `<div class="sec"><h4>Composition</h4>${kv([['XPUs', `${o.n.xpus} × ${X.name}`],['Dies', fmt(o.n.dies)],['Host CPUs', `${o.n.cpus} × ${Cp.name}`],['Compute trays', `${r.compute_trays} × ${r.xpus_per_tray} XPU`],['Switch ASICs', o.n.sw_chips?`${o.n.sw_chips} × ${SW.name}`:'none'],['NICs', `${o.n.nics} × ${N.name}`],['DPUs', o.n.dpus?`${o.n.dpus} × ${P.name}`:'none'],['Rack', `${r.rack_u}U · ${esc(r.form)}`],['Cooling', esc(r.cooling)],['HBM', `${fmt(o.n.xpus*X.hbm_gb/1000,1)} TB · ${fmt(o.n.xpus*X.hbm_tbs/1000,1)} PB/s`],['FP8 dense', X.fp8_pf?`${fmt(o.n.xpus*X.fp8_pf/1000,2)} EFLOPS`:'—'],['FP4 dense', X.fp4_pf?`${fmt(o.n.xpus*X.fp4_pf/1000,2)} EFLOPS`:'—']])}</div>`;
+    h += `<div class="sec"><h4>Scale-up</h4><div class="formula">${esc(L.formula)}</div>${kv([['Topology', esc(o.topo.name)],['Rack aggregate', `${fmt(per.v*o.n.xpus,0)} TB/s ${per.s}`],['Media', o.segments.map(s=>esc(D.MEDIA[s.media].name)).filter((x,i,a)=>a.indexOf(x)===i).join(', ')], o.topo.ports_avail!==undefined?['Switch port use', `${fmt(o.topo.util*100,0)}%`]:null])}</div>`;
+    h += `<div class="sec"><h4>Scale-out</h4>${kv([['Per XPU', `${fmt(o.so.per_xpu_gbps)} Gb/s (${N.name})`],['Per rack', `${fmt(o.so.rack_tbs_dir,1)} Tb/s per direction`],['Media', esc(D.MEDIA[so.nic_media].name)],['Leaf', `${o.so.leaf_switches} × ${SS.name}`]])}</div>`;
+    h += `<div class="sec"><h4>Power</h4>${kv([['Stated rack power', `${r.power_kw} kW`],['Computed', `${fmt(o.power.computed_rack_kw,0)} kW`],['XPU TDPs', `${fmt(o.power.xpu_kw,1)} kW`],['CPU + NIC + DPU + switch', `${fmt(o.power.cpu_kw+o.power.nic_kw+o.power.sw_kw,1)} kW`],['Interconnect (media + SerDes)', `${fmt(o.power.interconnect_kw,1)} kW`]])}</div>`;
+    if (b.sources?.length) h += `<div class="sec"><h4>Sources & caveats</h4><ul class="srcs">${b.sources.map(s=>`<li>${esc(s)}</li>`).join('')}</ul></div>`;
+  }
+  return h || head('Nothing selected','Click an element in the drawing.');
+}
+
+function renderBuild(){
+  const b=state.build, r=b.rack, su=b.scaleup, so=b.scaleout;
+  const opt = tbl => Object.values(tbl).map(x=>[x.id,x.name]);
+  const isTorus = /torus/.test(su.topology);
+  return `<div class="panel-h"><h2>Build</h2><span class="sub">based on ${esc(allPresets().find(p=>p.id===state.presetId)?.name||'')}</span></div>
+  <div class="tools"><button class="btn small primary" id="save-custom">Save as new architecture</button><button class="btn small" id="reset-build">Reset to preset</button></div>
+  <div class="sec"><h4>Identity</h4><div class="form">${inp('Name','name',{text:true})}${inp('Vendor','vendor',{text:true})}${inp('Status','status',{text:true})}${inp('Year','year',{text:true})}${inp('Confidence','conf',{select:[['H','H — documented'],['M','M — vendor-stated / partial'],['L','L — estimate']]})}<label class="wide">Tagline</label><input class="wide" data-path="tagline" value="${esc(b.tagline||'')}"></div></div>
+  <div class="sec"><h4>Rack</h4><div class="form">${inp('Compute trays','rack.compute_trays',{step:1})}${inp('XPUs per tray','rack.xpus_per_tray',{step:1})}${inp('CPUs per tray','rack.cpus_per_tray',{step:1})}${inp('Boards per tray','rack.boards_per_tray',{step:1})}${inp('Switch trays','rack.switch_trays',{step:1})}${inp('Switch ASICs per switch tray','rack.switch_chips_per_tray',{step:1})}${inp('Switch ASICs per compute tray','rack.switch_chips_per_compute_tray',{step:1,small:'baseboard NVSwitch / UBB'})}${inp('Rack height','rack.rack_u',{small:'U',step:1})}${inp('Compute tray height','rack.tray_u',{small:'U (blank = auto)',step:1})}${inp('Stated rack power','rack.power_kw',{small:'kW'})}${inp('Cooling','rack.cooling',{text:true})}${inp('Form factor','rack.form',{text:true})}</div></div>
+  <div class="sec"><h4>Building blocks</h4><div class="form">${inp('XPU','xpu',{select:opt(D.XPUS)})}${inp('Host CPU','cpu',{select:opt(D.CPUS)})}${inp('Scale-out NIC','nic',{select:opt(D.NICS)})}${inp('NICs per XPU','rack.nics_per_xpu',{step:'any'})}${inp('DPU','dpu',{select:opt(D.DPUS)})}${inp('DPUs per tray','rack.dpus_per_tray',{step:1})}</div><div class="hint" style="padding:6px 0 0">Pick from the library on the left or here; edit a block's specs from the Inspector after clicking it in the drawing.</div></div>
+  <div class="sec"><h4>Scale-up fabric</h4><div class="form">${inp('Fabric name','scaleup.name',{text:true})}${inp('Topology','scaleup.topology',{select:Object.values(D.TOPOLOGIES).map(t=>[t.id,t.name])})}${inp('Links per XPU','scaleup.links_per_xpu',{step:1})}${inp('Lanes per link','scaleup.lanes_per_link',{step:1})}${inp('Lane rate','scaleup.lane_gbps',{small:'Gb/s per lane per direction'})}${inp('Switch ASIC','scaleup.sw',{select:opt(D.SU_SWITCHES)})}${mediaSel(isTorus?'In-tray links':'XPU → switch media','scaleup.media_xpu_sw')}${mediaSel(isTorus?'Tray ↔ tray links':'Tray ↔ tray / inter-node media','scaleup.media_tray_tray')}${isTorus?mediaSel('Wrap-around (leaving rack)','scaleup.media_ext'):''}${isTorus?inp('Wrap-around leaves the rack','scaleup.wrap_external',{bool:true}):''}${inp('Vendor bidirectional figure','scaleup.vendor_bidir_tbs',{small:'TB/s per XPU, for the check'})}</div><div class="note small" style="margin-top:6px">${esc(D.TOPOLOGIES[su.topology].desc)}</div></div>
+  <div class="sec"><h4>Scale-out network</h4><div class="form">${mediaSel('NIC media','scaleout.nic_media')}${inp('Port / module speed','scaleout.module_gbps',{select:[[400,'400G'],[800,'800G'],[1600,'1.6T'],[3200,'3.2T']]})}${inp('Leaf switch','scaleout.so_sw',{select:opt(D.SO_SWITCHES)})}${inp('Leaf oversubscription','scaleout.oversub',{small:'downlinks : uplinks'})}${mediaSel('DPU media','scaleout.dpu_media')}</div></div>
+  <div class="sec"><h4>Board</h4><div class="form">${inp('Board name','board.name',{text:true})}${inp('XPUs per board','board.xpus',{step:1})}${inp('CPUs per board','board.cpus',{step:1})}${inp('Memory modules per CPU','board.mem_per_cpu',{step:1})}${inp('Memory type','board.mem_type',{text:true})}</div><div class="hint" style="padding:6px 0 0">Connectors are edited by clicking the board in the Board view.</div></div>
+  <div class="sec"><h4>Import / export</h4><div class="row"><button class="btn small" id="btn-export2">Download JSON</button><button class="btn small" id="btn-copy">Copy JSON</button></div><textarea class="io" id="io" placeholder="Paste a Rack Explorer JSON export here and click Load" style="margin:8px 0 0;width:100%"></textarea><div class="row" style="margin-top:6px"><button class="btn small" id="btn-load">Load pasted JSON</button></div></div>`;
+}
+
+function renderAssumptions(){
+  const groups = [...new Set(asmRows.map(r=>r.group))];
+  let h = `<div class="panel-h"><h2>Assumptions</h2><span class="sub">${Object.keys(state.asm).filter(k=>state.asm[k]!==asmDefault[k]).length} changed</span></div>
+  <div class="hint">Every disputed figure lives here rather than in the model. Yellow = changed from default. Hover ⓘ for the source note. Confidence: <span class="pill H">H</span> documented · <span class="pill M">M</span> vendor-stated / partial · <span class="pill L">L</span> estimate.</div>
+  <div class="tools"><button class="btn small" id="asm-reset">Reset all to defaults</button></div>`;
+  groups.forEach(gname=>{
+    h += `<div class="asm-group"><h4>${esc(gname)}</h4>`;
+    asmRows.filter(r=>r.group===gname).forEach(r=>{
+      const v = state.asm[r.key], changed = v!==asmDefault[r.key];
+      let ctl;
+      if (r.type==='select') ctl = `<select data-asm="${r.key}">${r.options.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select>`;
+      else if (r.type==='bool') ctl = `<select data-asm="${r.key}" data-type="bool"><option value="true" ${v?'selected':''}>yes</option><option value="false" ${!v?'selected':''}>no</option></select>`;
+      else ctl = `<input type="number" step="any" data-asm="${r.key}" value="${v}" class="${changed?'changed':''}">`;
+      const mk = r.media ? `<span class="mk" style="background:${D.MEDIA[r.media].color}"></span>` : '';
+      h += `<div class="asm"><div class="l">${mk}<span class="t" title="${esc(r.label)}">${esc(r.label)}</span> <span class="pill ${r.conf}">${r.conf}</span></div>${ctl}<span class="i" title="${esc(r.note||'')}">i</span>${r.unit?`<span class="u">${esc(r.unit)}</span>`:''}</div>`;
+    });
+    h += '</div>';
+  });
+  return h;
+}
+
+function renderBOM(){
+  const o=state.out, b=state.build;
+  let h = `<div class="panel-h"><h2>Bill of interconnect</h2><span class="sub">${esc(b.name)}</span></div>`;
+  h += `<div class="sec"><table class="grid"><thead><tr><th>Item</th><th style="text-align:right">Qty</th><th>Notes</th></tr></thead><tbody>`;
+  let cat='';
+  o.bom.forEach(row=>{ if (row.cat!==cat){ cat=row.cat; h += `<tr class="cat"><td colspan="3">${esc(cat)}</td></tr>`; } h += `<tr><td>${esc(row.item)}</td><td class="n">${fmt(row.qty)} <span class="c">${esc(row.unit)}</span></td><td class="c">${esc(row.note)}</td></tr>`; });
+  h += '</tbody></table></div>';
+  const P=o.power, Cc=o.cost;
+  h += `<div class="sec"><h4>Power budget</h4><table class="grid"><tbody>
+    <tr><td>XPU TDPs</td><td class="n">${fmt(P.xpu_kw,1)} kW</td></tr><tr><td>Host CPUs</td><td class="n">${fmt(P.cpu_kw,1)} kW</td></tr><tr><td>NICs + DPUs</td><td class="n">${fmt(P.nic_kw,1)} kW</td></tr><tr><td>Scale-up switch ASICs</td><td class="n">${fmt(P.sw_kw,1)} kW</td></tr>
+    <tr><td>Scale-up SerDes (${state.asm['serdes.lr_pj']} pJ/bit LR)</td><td class="n">${fmt(P.su_serdes_kw,2)} kW</td></tr><tr><td>Scale-up media (cables / optics)</td><td class="n">${fmt(P.su_media_kw,2)} kW</td></tr>
+    <tr><td>Scale-out SerDes</td><td class="n">${fmt(P.so_serdes_kw,2)} kW</td></tr><tr><td>Scale-out media (optics / AEC)</td><td class="n">${fmt(P.so_media_kw,2)} kW</td></tr>
+    <tr class="cat"><td>Interconnect total</td><td class="n">${fmt(P.interconnect_kw,1)} kW · ${fmt(P.interconnect_share*100,0)}%</td></tr>
+    <tr><td>Computed rack (+${state.asm['power.overhead_pct']}% overhead)</td><td class="n">${fmt(P.computed_rack_kw,0)} kW</td></tr><tr><td>Stated rack power</td><td class="n">${fmt(P.vendor_rack_kw,0)} kW</td></tr></tbody></table></div>`;
+  h += `<div class="sec"><h4>Interconnect cost (estimates)</h4><table class="grid"><tbody>
+    <tr><td>Scale-up media</td><td class="n">$${fmt(Cc.su_media/1000,0)}k</td></tr><tr><td>Scale-up switch ASICs</td><td class="n">$${fmt(Cc.su_switch/1000,0)}k</td></tr><tr><td>Scale-out NICs</td><td class="n">$${fmt(Cc.nic/1000,0)}k</td></tr><tr><td>Scale-out media</td><td class="n">$${fmt(Cc.so_media/1000,0)}k</td></tr>
+    <tr class="cat"><td>Interconnect total</td><td class="n">$${fmt(Cc.interconnect/1000,0)}k · $${fmt(Cc.interconnect_per_xpu/1000,1)}k / XPU</td></tr>
+    <tr><td>XPU silicon for scale (at $${fmt(state.asm['cost.xpu_usd'])})</td><td class="n">$${fmt(Cc.xpu/1e6,1)}M</td></tr><tr><td>Interconnect as % of XPU spend</td><td class="n">${fmt(Cc.interconnect/Math.max(1,Cc.xpu)*100,1)}%</td></tr></tbody></table>
+    <div class="note small" style="margin-top:8px">Unit costs are per-800G-end street-price classes from the Assumptions tab. They are placeholders for relative comparison, not a BOM quote.</div></div>`;
+  return h;
+}
+
+function renderSide(){
+  const body = $('#side-body');
+  body.innerHTML = state.side==='inspect' ? renderInspector() : state.side==='build' ? renderBuild() : state.side==='assume' ? renderAssumptions() : renderBOM();
+  document.querySelectorAll('#side-tabs button').forEach(bt=>bt.setAttribute('aria-selected', bt.dataset.tab===state.side));
+}
+function renderAll(){ renderPresets(); renderBlocks(); renderStats(); renderCanvas(); renderSide(); }
+function renderLight(){ recompute(); renderStats(); renderCanvas(); }
+
+/* ---------------- events ---------------- */
+function setBlock(type, id){
+  const tbl = {xpu:D.XPUS, cpu:D.CPUS, nic:D.NICS, dpu:D.DPUS, sw:D.SU_SWITCHES, so_sw:D.SO_SWITCHES}[type];
+  if (!tbl[id]) return;
+  state.build.blocks[type] = clone(tbl[id]);
+  if (type==='sw') state.build.scaleup.sw = id; else if (type==='so_sw') state.build.scaleout.so_sw = id; else state.build[type] = id;
+  if (type==='cpu') state.build.board.mem_per_cpu = Math.min(4, tbl[id].mem_modules||0) || state.build.board.mem_per_cpu;
+}
+function applyInput(el, full){
+  const asmKey = el.dataset.asm, path = el.dataset.path;
+  let v = el.value;
+  if (el.dataset.type==='bool') v = v==='true';
+  else if (el.type==='number' || (el.tagName==='SELECT' && /^-?\d+(\.\d+)?$/.test(v) && !/^(xpu|cpu|nic|dpu|scaleup\.sw|scaleout\.so_sw|scaleup\.topology|scaleup\.media|scaleout\.\w+_media)/.test(path||''))) { v = v===''? undefined : Number(v); if (v!==undefined && Number.isNaN(v)) return; }
+  if (asmKey){ state.asm[asmKey] = v; LS.set('re.asm', state.asm); }
+  else if (path){
+    if (['xpu','cpu','nic','dpu'].includes(path)) setBlock(path, v);
+    else if (path==='scaleup.sw') setBlock('sw', v);
+    else if (path==='scaleout.so_sw') setBlock('so_sw', v);
+    else set(state.build, path, v);
+    if (path==='scaleup.topology'){ const t=v, b=state.build; if (t==='mesh') b.scaleup.links_per_xpu = Math.max(1,b.rack.xpus_per_tray-1); if (t==='torus2d') b.scaleup.links_per_xpu=4; if (t==='torus3d') b.scaleup.links_per_xpu=6; if (t==='switched' && !b.rack.switch_trays){ b.rack.switch_trays = Math.max(1, Math.round(b.rack.compute_trays/2)); b.rack.switch_chips_per_tray = b.rack.switch_chips_per_tray||2; if (b.blocks.sw.id==='none') setBlock('sw','nvsw5'); } if (t==='intray' && !b.rack.switch_chips_per_compute_tray){ b.rack.switch_chips_per_compute_tray = 2; if (b.blocks.sw.id==='none') setBlock('sw','nvsw5'); } }
+  }
+  if (full) { recompute(); renderAll(); } else renderLight();
+}
+document.addEventListener('input', e=>{ const el=e.target; if (el.matches('[data-path],[data-asm]') && el.tagName!=='SELECT') applyInput(el,false); });
+document.addEventListener('change', e=>{ const el=e.target; if (el.matches('[data-path],[data-asm]')) applyInput(el, true); });
+document.addEventListener('click', e=>{
+  const t = e.target;
+  const del = t.closest('[data-del]'); if (del){ e.stopPropagation(); const id=del.dataset.del; state.custom = state.custom.filter(p=>p.id!==id); LS.set('re.custom', state.custom); if (state.presetId===id) loadPreset(D.PRESETS[0].id); else renderPresets(); return; }
+  const pr = t.closest('[data-preset]'); if (pr){ loadPreset(pr.dataset.preset); return; }
+  const bl = t.closest('[data-block]'); if (bl){ setBlock(bl.dataset.block, bl.dataset.id); state.sel = bl.dataset.block; state.side='inspect'; recompute(); renderAll(); return; }
+  const vt = t.closest('#view-tabs [data-view]'); if (vt){ state.view = vt.dataset.view; renderCanvas(); writeHash(); return; }
+  const st = t.closest('#side-tabs [data-tab]'); if (st){ state.side = st.dataset.tab; renderSide(); return; }
+  const hitEl = t.closest('[data-sel]'); if (hitEl){ let k = hitEl.dataset.sel; if (k.startsWith('xpuidx:')){ state.selXpu = +k.split(':')[1]; k='xpu'; } state.sel = k; state.side='inspect'; renderCanvas(); renderSide(); return; }
+  if (t.id==='conn-add'){ (state.build.board.connectors ||= []).push({n:'New connector', side:'right', cat:'pcie'}); renderLight(); renderSide(); return; }
+  const cd = t.closest('[data-conn-del]'); if (cd){ state.build.board.connectors.splice(+cd.dataset.connDel,1); if (state.sel.startsWith('conn:')) state.sel='board'; renderLight(); renderSide(); return; }
+  if (t.id==='save-custom'){ const name = prompt('Name for this architecture', state.build.name + ' (variant)'); if (!name) return; const p = clone(state.build); p.id = 'custom_' + Date.now().toString(36); p.name = name; p.custom = true; p.status = 'custom'; delete p.sources; state.custom.push(p); LS.set('re.custom', state.custom); loadPreset(p.id); return; }
+  if (t.id==='reset-build'){ loadPreset(state.presetId); return; }
+  if (t.id==='asm-reset'){ state.asm = Object.assign({}, asmDefault); LS.set('re.asm', state.asm); recompute(); renderAll(); return; }
+  if (t.id==='btn-export' || t.id==='btn-export2'){ download(`${state.build.id||'rack'}.json`, exportJSON(), 'application/json'); return; }
+  if (t.id==='btn-copy'){ navigator.clipboard?.writeText(exportJSON()); t.textContent='Copied'; setTimeout(()=>t.textContent='Copy JSON',1200); return; }
+  if (t.id==='btn-load'){ importJSON($('#io').value); return; }
+  if (t.id==='btn-import'){ $('#file-import').click(); return; }
+  if (t.id==='btn-svg'){ saveSVG(); return; }
+  if (t.id==='btn-theme'){ const root=document.documentElement; const cur = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); root.dataset.theme = cur==='dark'?'light':'dark'; LS.set('re.theme', root.dataset.theme); return; }
+  if (t.id==='zoom-in'){ state.zoom=Math.min(2.5,state.zoom*1.25); renderCanvas(); return; }
+  if (t.id==='zoom-out'){ state.zoom=Math.max(.5,state.zoom/1.25); renderCanvas(); return; }
+  if (t.id==='zoom-fit'){ state.zoom=1; renderCanvas(); return; }
+});
+$('#preset-select').addEventListener('change', e=>loadPreset(e.target.value));
+$('#file-import').addEventListener('change', e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>importJSON(rd.result); rd.readAsText(f); e.target.value=''; });
+
+function exportJSON(){ return JSON.stringify({ app:'rack-explorer', version:1, exported:new Date().toISOString(), build: state.build, assumptions: state.asm }, null, 2); }
+function importJSON(txt){
+  try { const j = JSON.parse(txt); const b = j.build || j; if (!b.rack || !b.scaleup) throw new Error('missing rack/scaleup');
+    b.id = b.id || 'import_'+Date.now().toString(36); b.custom = true; b.status = b.status||'imported'; if (!b.name) b.name='Imported build';
+    if (!state.custom.find(p=>p.id===b.id)) { state.custom.push(b); LS.set('re.custom', state.custom); }
+    if (j.assumptions) { state.asm = Object.assign({}, asmDefault, j.assumptions); LS.set('re.asm', state.asm); }
+    loadPreset(b.id);
+  } catch(err){ alert('Could not load that JSON: ' + err.message); }
+}
+function download(name, content, type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500); }
+function saveSVG(){
+  const svg = $('#canvas svg'); if (!svg) return;
+  const cs = getComputedStyle(document.documentElement);
+  let css=''; for (const sh of document.styleSheets){ let rules; try{ rules=sh.cssRules; }catch(e){ continue; } for (const r of rules){ if (r.selectorText && /^svg/.test(r.selectorText)) css += r.cssText.replace(/^svg\s*/,'').replace(/,\s*svg\s*/g,', ') + '\n'; } }
+  css = css.replace(/var\((--[\w-]+)\)/g, (m,v)=>cs.getPropertyValue(v).trim()||m);
+  css = css.replace(/'Barlow Condensed'/g,"'Barlow Condensed',Arial Narrow,sans-serif").replace(/var\(--ui\)/g,'Barlow,Arial,sans-serif');
+  const clone = svg.cloneNode(true); clone.insertAdjacentHTML('afterbegin', `<style>${css}</style>`);
+  clone.style.background = cs.getPropertyValue('--sheet');
+  download(`${state.build.id||'rack'}-${state.view}.svg`, '<?xml version="1.0" encoding="UTF-8"?>\n'+clone.outerHTML, 'image/svg+xml');
+}
+function writeHash(){ try{ history.replaceState(null,'',`#arch=${encodeURIComponent(state.presetId)}&view=${state.view}`); }catch(e){} }
+function readHash(){ const m = Object.fromEntries(location.hash.slice(1).split('&').filter(Boolean).map(kv=>kv.split('=').map(decodeURIComponent))); if (m.view && ['board','tray','rack','scaleup','scaleout','compare'].includes(m.view)) state.view = m.view; return m.arch; }
+
+/* ---------------- boot ---------------- */
+const th = LS.get('re.theme', null); if (th) document.documentElement.dataset.theme = th;
+renderMediaLegend();
+const archFromHash = readHash();
+loadPreset(archFromHash && allPresets().find(p=>p.id===archFromHash) ? archFromHash : 'gb200_nvl72');
+window.RE = state;
+})();
+
+</script>
+</body>
+</html>
