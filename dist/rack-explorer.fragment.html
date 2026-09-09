@@ -386,7 +386,7 @@ const PRESETS = [
     tagline:'72 Blackwell GPUs, 36 Grace, one NVLink domain over a copper spine.',
     xpu:'b200', cpu:'grace', nic:'cx7', dpu:'bf3',
     rack:{ compute_trays:18, xpus_per_tray:4, cpus_per_tray:2, boards_per_tray:2, switch_trays:9, switch_chips_per_tray:2,
-           switch_chips_per_compute_tray:0, nics_per_xpu:1, dpus_per_tray:2, rack_u:48, power_kw:120, cooling:'Direct liquid (cold plates)', form:'Oberon (MGX) rack' },
+           switch_chips_per_compute_tray:0, nics_per_xpu:1, dpus_per_tray:2, drives_per_tray:4, mgmt_ports_per_tray:1, rack_u:48, power_kw:120, cooling:'Direct liquid (cold plates)', form:'Oberon (MGX) rack' },
     scaleup:{ name:'NVLink 5', topology:'switched', links_per_xpu:18, lanes_per_link:2, lane_gbps:200, sw:'nvsw5',
               media_xpu_sw:'backplane', media_tray_tray:'backplane', vendor_bidir_tbs:1.8 },
     scaleout:{ nic_media:'pluggable', module_gbps:800, so_sw:'qx800', dpu_media:'pluggable', oversub:1 },
@@ -412,7 +412,7 @@ const PRESETS = [
     tagline:'Blackwell Ultra: 288 GB HBM3e, ConnectX-8 800G per GPU, same NVLink 5 spine.',
     xpu:'b300', cpu:'grace', nic:'cx8', dpu:'bf3',
     rack:{ compute_trays:18, xpus_per_tray:4, cpus_per_tray:2, boards_per_tray:2, switch_trays:9, switch_chips_per_tray:2,
-           switch_chips_per_compute_tray:0, nics_per_xpu:1, dpus_per_tray:2, rack_u:48, power_kw:135, cooling:'Direct liquid (cold plates)', form:'Oberon (MGX) rack' },
+           switch_chips_per_compute_tray:0, nics_per_xpu:1, dpus_per_tray:2, drives_per_tray:4, mgmt_ports_per_tray:1, rack_u:48, power_kw:135, cooling:'Direct liquid (cold plates)', form:'Oberon (MGX) rack' },
     scaleup:{ name:'NVLink 5', topology:'switched', links_per_xpu:18, lanes_per_link:2, lane_gbps:200, sw:'nvsw5',
               media_xpu_sw:'backplane', media_tray_tray:'backplane', vendor_bidir_tbs:1.8 },
     scaleout:{ nic_media:'pluggable', module_gbps:800, so_sw:'qx800', dpu_media:'pluggable', oversub:1 },
@@ -434,7 +434,7 @@ const PRESETS = [
     tagline:'72 Rubin packages (144 dies), NVLink 6 at 3.6 TB/s per package, ConnectX-9 1.6T.',
     xpu:'rubin', cpu:'vera', nic:'cx9', dpu:'bf4',
     rack:{ compute_trays:18, xpus_per_tray:4, cpus_per_tray:2, boards_per_tray:2, switch_trays:9, switch_chips_per_tray:2,
-           switch_chips_per_compute_tray:0, nics_per_xpu:1, dpus_per_tray:2, rack_u:48, power_kw:190, cooling:'100% liquid', form:'Oberon (MGX) rack, cable-free trays' },
+           switch_chips_per_compute_tray:0, nics_per_xpu:1, dpus_per_tray:2, drives_per_tray:4, mgmt_ports_per_tray:1, rack_u:48, power_kw:190, cooling:'100% liquid', form:'Oberon (MGX) rack, cable-free trays' },
     scaleup:{ name:'NVLink 6', topology:'switched', links_per_xpu:18, lanes_per_link:4, lane_gbps:200, sw:'nvsw6',
               media_xpu_sw:'backplane', media_tray_tray:'backplane', vendor_bidir_tbs:3.6 },
     scaleout:{ nic_media:'pluggable', module_gbps:1600, so_sw:'th6', dpu_media:'pluggable', oversub:1 },
@@ -456,7 +456,7 @@ const PRESETS = [
     tagline:'144 four-die packages in a 600 kW Kyber rack; NVLink 7 at 1.5 PB/s aggregate.',
     xpu:'rubinu', cpu:'vera', nic:'cx9', dpu:'bf4',
     rack:{ compute_trays:72, xpus_per_tray:2, cpus_per_tray:1, boards_per_tray:1, switch_trays:18, switch_chips_per_tray:2,
-           switch_chips_per_compute_tray:0, nics_per_xpu:2, dpus_per_tray:1, rack_u:60, power_kw:600, cooling:'100% liquid', form:'Kyber rack: vertical blades, 4 pods × 18' },
+           switch_chips_per_compute_tray:0, nics_per_xpu:2, dpus_per_tray:1, drives_per_tray:2, mgmt_ports_per_tray:1, rack_u:60, power_kw:600, cooling:'100% liquid', form:'Kyber rack: vertical blades, 4 pods × 18' },
     scaleup:{ name:'NVLink 7', topology:'switched', links_per_xpu:52, lanes_per_link:4, lane_gbps:200, sw:'nvsw7',
               media_xpu_sw:'backplane', media_tray_tray:'backplane', vendor_bidir_tbs:10.4 },
     scaleout:{ nic_media:'cpo', module_gbps:1600, so_sw:'qxp', dpu_media:'pluggable', oversub:1 },
@@ -475,7 +475,7 @@ const PRESETS = [
     tagline:'Classic scale-out design: NVLink stays on the baseboard, everything else rides pluggable optics.',
     xpu:'b200', cpu:'xeon6', nic:'cx7', dpu:'bf3',
     rack:{ compute_trays:4, xpus_per_tray:8, cpus_per_tray:2, boards_per_tray:1, switch_trays:0, switch_chips_per_tray:0,
-           switch_chips_per_compute_tray:2, nics_per_xpu:1, dpus_per_tray:2, rack_u:42, power_kw:60, cooling:'Air (or hybrid)', form:'8–10U HGX servers' },
+           switch_chips_per_compute_tray:2, nics_per_xpu:1, dpus_per_tray:2, drives_per_tray:8, mgmt_ports_per_tray:1, rack_u:42, power_kw:60, cooling:'Air (or hybrid)', form:'8–10U HGX servers' },
     scaleup:{ name:'NVLink 5 (in-node)', topology:'intray', links_per_xpu:18, lanes_per_link:2, lane_gbps:200, sw:'nvsw5',
               media_xpu_sw:'pcb', media_tray_tray:'pluggable', vendor_bidir_tbs:1.8 },
     scaleout:{ nic_media:'pluggable', module_gbps:800, so_sw:'qx800', dpu_media:'pluggable', oversub:1 },
@@ -493,7 +493,7 @@ const PRESETS = [
     tagline:'Four 16-chip Trn2 servers joined by NeuronLink into a 64-chip torus; no scale-up switch.',
     xpu:'trn2', cpu:'spr', nic:'nitro5', dpu:'nitro',
     rack:{ compute_trays:4, xpus_per_tray:16, cpus_per_tray:2, boards_per_tray:2, switch_trays:0, switch_chips_per_tray:0,
-           switch_chips_per_compute_tray:0, nics_per_xpu:0.5, dpus_per_tray:2, rack_u:42, power_kw:45, cooling:'Air', form:'4 × 2U-class Trn2 servers' },
+           switch_chips_per_compute_tray:0, nics_per_xpu:0.5, dpus_per_tray:2, drives_per_tray:4, mgmt_ports_per_tray:1, rack_u:42, power_kw:45, cooling:'Air', form:'4 × 2U-class Trn2 servers' },
     scaleup:{ name:'NeuronLink-v3', topology:'torus3d', links_per_xpu:6, lanes_per_link:8, lane_gbps:100, sw:'none',
               media_xpu_sw:'pcb', media_tray_tray:'aec', media_ext:'aec', wrap_external:false, vendor_bidir_tbs:1.28 },
     scaleout:{ nic_media:'pluggable', module_gbps:400, so_sw:'th5', dpu_media:'pluggable', oversub:1 },
@@ -512,7 +512,7 @@ const PRESETS = [
     tagline:'Trainium3 moves to a switched scale-up fabric: NeuronSwitch-v1, 144 chips per UltraServer.',
     xpu:'trn3', cpu:'spr', nic:'nitro6', dpu:'nitro',
     rack:{ compute_trays:9, xpus_per_tray:16, cpus_per_tray:2, boards_per_tray:2, switch_trays:9, switch_chips_per_tray:2,
-           switch_chips_per_compute_tray:0, nics_per_xpu:0.5, dpus_per_tray:2, rack_u:48, power_kw:150, cooling:'Liquid', form:'Multi-rack UltraServer (placeholder layout)' },
+           switch_chips_per_compute_tray:0, nics_per_xpu:0.5, dpus_per_tray:2, drives_per_tray:4, mgmt_ports_per_tray:1, rack_u:48, power_kw:150, cooling:'Liquid', form:'Multi-rack UltraServer (placeholder layout)' },
     scaleup:{ name:'NeuronLink-v4', topology:'switched', links_per_xpu:8, lanes_per_link:8, lane_gbps:200, sw:'neuronsw',
               media_xpu_sw:'backplane', media_tray_tray:'aec', vendor_bidir_tbs:3.2 },
     scaleout:{ nic_media:'pluggable', module_gbps:800, so_sw:'th6', dpu_media:'pluggable', oversub:1 },
@@ -529,7 +529,7 @@ const PRESETS = [
     tagline:'4×4×4 ICI torus in copper inside the rack; wrap-around links exit through optical circuit switches.',
     xpu:'tpuv7', cpu:'spr', nic:'tpuhost', dpu:'none',
     rack:{ compute_trays:16, xpus_per_tray:4, cpus_per_tray:1, boards_per_tray:1, switch_trays:0, switch_chips_per_tray:0,
-           switch_chips_per_compute_tray:0, nics_per_xpu:0.5, dpus_per_tray:0, rack_u:42, power_kw:80, cooling:'Liquid', form:'Google TPU rack, 64 chips' },
+           switch_chips_per_compute_tray:0, nics_per_xpu:0.5, dpus_per_tray:0, drives_per_tray:0, mgmt_ports_per_tray:1, rack_u:42, power_kw:80, cooling:'Liquid', form:'Google TPU rack, 64 chips' },
     scaleup:{ name:'ICI (Ironwood)', topology:'torus3d', links_per_xpu:6, lanes_per_link:4, lane_gbps:200, sw:'ocs',
               media_xpu_sw:'pcb', media_tray_tray:'dac', media_ext:'ocs', wrap_external:true, vendor_bidir_tbs:1.2 },
     scaleout:{ nic_media:'pluggable', module_gbps:400, so_sw:'jupiter', dpu_media:'pluggable', oversub:1 },
@@ -549,7 +549,7 @@ const PRESETS = [
     tagline:'UALink over Ethernet scale-up at 3.6 TB/s per GPU, Vulcano 800G scale-out, double-wide rack.',
     xpu:'mi450', cpu:'venice', nic:'vulcano', dpu:'none',
     rack:{ compute_trays:18, xpus_per_tray:4, cpus_per_tray:1, boards_per_tray:1, switch_trays:9, switch_chips_per_tray:2,
-           switch_chips_per_compute_tray:0, nics_per_xpu:3, dpus_per_tray:0, rack_u:48, power_kw:200, cooling:'Liquid', form:'Double-wide OCP rack' },
+           switch_chips_per_compute_tray:0, nics_per_xpu:3, dpus_per_tray:0, drives_per_tray:4, mgmt_ports_per_tray:1, rack_u:48, power_kw:200, cooling:'Liquid', form:'Double-wide OCP rack' },
     scaleup:{ name:'UALink / UALoE', topology:'switched', links_per_xpu:18, lanes_per_link:4, lane_gbps:200, sw:'th6',
               media_xpu_sw:'backplane', media_tray_tray:'backplane', vendor_bidir_tbs:3.6 },
     scaleout:{ nic_media:'pluggable', module_gbps:800, so_sw:'th6', dpu_media:'pluggable', oversub:1 },
@@ -568,7 +568,7 @@ const PRESETS = [
     tagline:'8-GPU Infinity Fabric mesh per node, Pollara 400 scale-out; no scale-up switch at all.',
     xpu:'mi355x', cpu:'turin', nic:'pollara', dpu:'none',
     rack:{ compute_trays:4, xpus_per_tray:8, cpus_per_tray:2, boards_per_tray:1, switch_trays:0, switch_chips_per_tray:0,
-           switch_chips_per_compute_tray:0, nics_per_xpu:1, dpus_per_tray:0, rack_u:42, power_kw:60, cooling:'Air or liquid', form:'8–10U UBB servers' },
+           switch_chips_per_compute_tray:0, nics_per_xpu:1, dpus_per_tray:0, drives_per_tray:8, mgmt_ports_per_tray:1, rack_u:42, power_kw:60, cooling:'Air or liquid', form:'8–10U UBB servers' },
     scaleup:{ name:'Infinity Fabric (XGMI)', topology:'mesh', links_per_xpu:7, lanes_per_link:16, lane_gbps:38.4, sw:'none',
               media_xpu_sw:'pcb', media_tray_tray:'pluggable', vendor_bidir_tbs:1.075 },
     scaleout:{ nic_media:'pluggable', module_gbps:400, so_sw:'th5', dpu_media:'pluggable', oversub:1 },
@@ -1297,43 +1297,85 @@ function renderScaleUp(b, o, sel, selXpu){
 }
 
 /* =====================================================================
-   5. SCALE-OUT
+   5. SCALE-OUT — front-of-tray faceplate with every port and where each connection lands
    ===================================================================== */
 function renderScaleOut(b, o, sel){
-  const r=b.rack, so=b.scaleout, S=o.so, N=b.blocks.nic, P=b.blocks.dpu, SS=b.blocks.so_sw, W=1240, H=720, ctx=ctxFor(b,'scaleout',5,5);
-  ctx.sub = `${S.nics} × ${N.name} · ${fmt(S.per_xpu_gbps)} Gb/s per XPU · ${fmt(S.rack_tbs_dir,1)} Tb/s per rack per direction · scale-up : scale-out = ${fmt(S.ratio_su_so,1)} : 1`;
+  const r=b.rack, so=b.scaleout, S=o.so, N=b.blocks.nic, P=b.blocks.dpu, SS=b.blocks.so_sw, W=1240, H=760, ctx=ctxFor(b,'scaleout',5,5);
+  const nn = Math.round(r.xpus_per_tray*r.nics_per_xpu);                     // NIC ports per tray
+  const cages = so.module_gbps ? Math.ceil(nn*N.gbps/so.module_gbps) : 0;    // pluggable cages per tray
+  const portsPerCage = cages ? Math.max(1, Math.round(so.module_gbps/Math.max(1,N.gbps))) : 0;
+  const dpuN = r.dpus_per_tray|0, drives = r.drives_per_tray ?? 0, mgmt = r.mgmt_ports_per_tray ?? 1;
+  const nicM = M(so.nic_media), dpuM = M(so.dpu_media);
+  ctx.sub = `Front of one compute tray (×${r.compute_trays} per rack) · ${nn} × ${N.name} ${N.gbps}G in ${cages} × ${so.module_gbps}G cages → ${fmt(S.per_xpu_gbps)} Gb/s per XPU · ${fmt(S.rack_tbs_dir,1)} Tb/s per rack`;
   let s='';
-  const nicCol=M(so.nic_media).color, dCol=M(so.dpu_media).color, seg=o.so_segments.find(x=>x.id==='so_nic'), dseg=o.so_segments.find(x=>x.id==='so_dpu');
-  // rack block
-  const rx=80, ry=120, rw=220, rh=400;
-  s += hit('rack', sel, rect(rx,ry,rw,rh,{rx:4,cls:'f-rack ink sel-target',style:'stroke-width:1.4'}));
-  const n=Math.min(r.compute_trays,24), th=(rh-20)/n;
-  for (let i=0;i<n;i++){ s += rect(rx+10, ry+10+i*th, rw-20, th-3, {rx:1,cls:'f-tray ink2',style:'stroke-width:.6'}); }
-  s += text(rx+rw/2, ry-12, `${b.name} · ${o.n.xpus} × ${xpuShort(b)}`, {cls:'t-eyebrow',anchor:'middle'});
-  // NIC column
-  const nx=rx+rw+60, nn=Math.min(S.nics, 36), nh=(rh)/Math.max(1,nn);
-  for (let i=0;i<nn;i++){ s += hit('nic', sel, rect(nx, ry+i*nh, 60, Math.max(3,nh-3), {rx:1,cls:'f-nic ink2 sel-target',style:'stroke-width:.6'})); s += line(rx+rw, ry+i*nh+nh/2, nx, ry+i*nh+nh/2, {cls:'rule'}); }
-  s += text(nx+30, ry-12, `${S.nics} × ${N.name}${nn<S.nics?` (${nn} drawn)`:''}`, {cls:'t-eyebrow',anchor:'middle'});
-  // modules bundle → leaf
-  const lx=W-420, lw=220, leafN=Math.max(1,S.leaf_switches||1), lh=Math.min(56,(rh-20)/leafN), ly0=ry+(rh-leafN*lh)/2;
-  const mods=Math.min(seg?seg.links:0, 36);
-  for (let i=0;i<mods;i++){ const y1=ry+(i+.5)*(rh/mods), j=Math.floor(i/mods*leafN), y2=ly0+j*lh+lh/2 + ((i%3)-1)*4; s += path(`M${nx+60} ${y1} C ${nx+260} ${y1}, ${lx-200} ${y2}, ${lx} ${y2}`, {cls:'f-none',style:`stroke:${nicCol};stroke-width:1.4;opacity:.7`, extra:dash(so.nic_media)}); }
-  s += hit('soseg:so_nic', sel, rect(nx+70, ry, lx-nx-80, rh, {cls:'f-none sel-target',style:'stroke:transparent'}));
-  for (let j=0;j<leafN;j++){ s += hit('leaf', sel, rect(lx, ly0+j*lh, lw, lh-6, {rx:3,cls:'f-sw ink sel-target',style:'stroke-width:1'}) + text(lx+lw/2, ly0+j*lh+lh/2-2+ (lh>30?-4:2), SS.name.split(' (')[0], {cls:'t-tb-b',anchor:'middle',style:'font-size:12px'}) + (lh>30?text(lx+lw/2, ly0+j*lh+lh/2+11, `${SS.ports} × ${SS.port_gbps}G · ${SS.tbs} Tb/s`, {cls:'t-tb',anchor:'middle'}):'')); }
-  s += text(lx+lw/2, ry-12, `${leafN} × leaf (${so.oversub}:1 · ${fmt(S.leaf_ports_needed,0)} downlinks)`, {cls:'t-eyebrow',anchor:'middle'});
+  const seg=o.so_segments.find(x=>x.id==='so_nic'), dseg=o.so_segments.find(x=>x.id==='so_dpu');
+
+  // ---- faceplate
+  const fx=60, fy=170, fw=790, fh=140;
+  s += text(fx, fy-30, `COMPUTE TRAY — FRONT FACE  ·  ${r.xpus_per_tray} × ${xpuShort(b)} inside  ·  ×${r.compute_trays} per rack`, {cls:'t-eyebrow'});
+  s += hit('tray:compute', sel, rect(fx,fy,fw,fh,{rx:4,cls:'f-tray ink sel-target',style:'stroke-width:1.6'}));
+  // mounting ears
+  s += rect(fx-14,fy+8,14,fh-16,{rx:2,cls:'f-panel ink2',style:'stroke-width:.8'}) + rect(fx+fw,fy+8,14,fh-16,{rx:2,cls:'f-panel ink2',style:'stroke-width:.8'});
+  [[fx-7,fy+24],[fx-7,fy+fh-24],[fx+fw+7,fy+24],[fx+fw+7,fy+fh-24]].forEach(([x,y])=>{ s += `<circle cx="${x}" cy="${y}" r="3" class="f-sheet ink2" style="stroke-width:.8"/>`; });
+  let x = fx+18; const cy = fy+fh/2;
+  const groups = [];   // {x1,x2,label,color,sel}
+  // drive bays
+  if (drives){ const bw=16, g0=x; for (let i=0;i<Math.min(drives,12);i++){ s += hit('drives', sel, rect(x, fy+16, bw, fh-32, {rx:2,cls:'f-mem ink2 sel-target',style:'stroke-width:.7'}) + rect(x+4, fy+22, bw-8, 4, {cls:'rule2'})); x += bw+4; }
+    groups.push({x1:g0,x2:x-4,label:[`${drives} × E1.S NVMe bays`, 'local storage · no network port'],color:'var(--ink-3)'}); x += 22; }
+  // BMC / management
+  if (mgmt){ const g0=x; for (let i=0;i<mgmt;i++){ s += hit('mgmt', sel, rect(x, cy-9, 22, 18, {rx:2,cls:'f-conn ink sel-target',style:'stroke-width:.9'}) + rect(x+5, cy+2, 12, 5, {cls:'f-panel ink2',style:'stroke-width:.5'})); x += 28; }
+    // status LEDs
+    for (let i=0;i<3;i++){ s += `<circle cx="${x+4}" cy="${cy-8+i*8}" r="2.2" style="fill:${['#2E8B57','#C9A227','#4A5D73'][i]}"/>`; }
+    x += 14; groups.push({x1:g0,x2:x-4,label:[`${mgmt} × BMC 1 GbE (RJ45) + LEDs`, 'out-of-band management'],color:D.CONNECTOR_CATS.mgmt.color,sel:'mgmt'}); x += 22; }
+  // NIC cages
+  const nicStart = x; const cageW = Math.max(24, Math.min(56, (fw - (x-fx) - 40 - dpuN*54) / Math.max(1,cages) - 6)), cageH = 40;
+  const nicCage = [];
+  for (let i=0;i<cages;i++){ const cx0=x; s += hit('soseg:so_nic', sel, block(x, cy-cageH/2, cageW, cageH, nicM.color, '', {op:.92}) + text(x+cageW/2, cy+cageH/2+11, `${so.module_gbps>=1000?(so.module_gbps/1000)+'T':so.module_gbps+'G'}`, {cls:'t-tb',anchor:'middle'}) );
+    for (let k=0;k<Math.min(portsPerCage,4);k++){ const pw=(cageW-8)/Math.min(portsPerCage,4); s += rect(x+4+k*pw, cy-cageH/2+6, pw-3, cageH-12, {rx:1,style:'fill:#fff;fill-opacity:.55;stroke:none'}); }
+    nicCage.push({x:cx0+cageW/2, y:cy-cageH/2}); x += cageW+6; }
+  if (cages) groups.push({x1:nicStart,x2:x-6,label:[`${nn} × ${N.name} ${N.gbps}G → ${cages} × ${so.module_gbps}G ${nicM.short} cage${cages>1?'s':''}${portsPerCage>1?` (${portsPerCage} ports each)`:''}`, `${nicM.name} · ${fmt(nn*N.gbps/1000,1)} Tb/s per tray to the backend leaf`],color:nicM.color,sel:'soseg:so_nic'});
+  x += 22;
+  // DPU cages
+  const dpuStart = x, dpuCage=[];
+  for (let i=0;i<dpuN;i++){ s += hit('soseg:so_dpu', sel, block(x, cy-20, 44, 40, dpuM.color, '', {op:.75}) + rect(x+4, cy-14, 36, 28, {rx:1,style:'fill:#fff;fill-opacity:.55;stroke:none'}) + text(x+22, cy+31, `${P.gbps}G`, {cls:'t-tb',anchor:'middle'})); dpuCage.push({x:x+22,y:cy-20}); x += 50; }
+  if (dpuN) groups.push({x1:dpuStart,x2:x-6,label:[`${dpuN} × ${P.name} ${P.gbps}G`, `${dpuM.name} · front-end / storage network`],color:dpuM.color,sel:'soseg:so_dpu'});
+  // callouts under faceplate (alternate two depths so labels do not collide)
+  groups.forEach((g,i)=>{ const mx=(g.x1+g.x2)/2, depth = fy+fh+34+(i%2)*46; s += line(g.x1, fy+fh+6, g.x2, fy+fh+6, {cls:'dim'}) + line(g.x1,fy+fh+2,g.x1,fy+fh+10,{cls:'dim'}) + line(g.x2,fy+fh+2,g.x2,fy+fh+10,{cls:'dim'});
+    s += callout(mx, fy+fh+6, mx+14, depth, g.label, g.color); });
+
+  // ---- destinations (right)
+  const dx=930, dw=270;
+  const dest = (y,h,key,title,l1,l2,fill)=>{ return hit(key, sel, rect(dx,y,dw,h,{rx:3,cls:`${fill} ink sel-target`,style:'stroke-width:1'}) + text(dx+12,y+19,title,{cls:'t-tb-b',style:'font-size:13px'}) + text(dx+12,y+35,l1,{cls:'t-small'}) + (l2?text(dx+12,y+49,l2,{cls:'t-small'}):'')); };
   // spine
-  s += rect(lx, ry-90, lw, 40, {rx:3,cls:'f-none ink2',style:'stroke-dasharray:5 4;stroke-width:1'}) + text(lx+lw/2, ry-66, `Spine / pod fabric  (${M(SS.media).name})`, {cls:'t-small',anchor:'middle'});
-  s += line(lx+lw/2, ry-50, lx+lw/2, ly0, {cls:'ink2',style:'stroke-dasharray:5 4'});
-  // module callout
-  if (seg) s += callout((nx+60+lx)/2, ry+rh/2, (nx+60+lx)/2, ry+rh+36, [`${fmt(seg.links)} × ${so.module_gbps}G links · ${fmt(seg.modules)} ${M(so.nic_media).family==='optical'?'modules':'cable ends'} (${M(so.nic_media).name})`, `${S.lanes} lanes × ${fmt(S.lane_gbps)}G per port · ${fmt(seg.fibers||seg.pairs)} ${M(so.nic_media).family==='optical'?'fibers':'twinax pairs'}`, `${fmt(seg.media_w/1000,2)} kW media + ${fmt(seg.serdes_w/1000,2)} kW SerDes · ≈ $${fmt(seg.media_usd/1000,0)}k`], nicCol, 'middle');
-  // DPU path
-  if (dseg){ const dy = ry+rh+112; s += path(`M${rx+rw} ${dy} L${lx} ${dy}`, {style:`stroke:${dCol};stroke-width:2;opacity:.8`, extra:dash(so.dpu_media)+' marker-end="url(#arr)"'});
-    s += hit('soseg:so_dpu', sel, rect(lx, dy-18, lw, 36, {rx:3,cls:'f-dpu ink sel-target',style:'stroke-width:1'}) + text(lx+lw/2, dy+5, `Front-end / storage · ${o.n.dpus} × ${P.name}`, {cls:'t-tb',anchor:'middle'}));
-    s += text(rx+rw+10, dy-8, `${fmt(S.dpu_gbps_dir/1000,1)} Tb/s · ${fmt(dseg.modules)} × ${dseg.module_gbps}G ${M(so.dpu_media).short} (DPU front-end)`, {cls:'t-small'}); }
-  // right column stats
-  const ax=W-170, ay=ry+10;
-  [['PER XPU', `${fmt(S.per_xpu_gbps)} Gb/s`],['PER RACK', `${fmt(S.rack_tbs_dir,1)} Tb/s / dir`],['SU : SO', `${fmt(S.ratio_su_so,1)} : 1`],['MODULES', `${fmt(seg?seg.modules:0)}`],['OPTICS POWER', `${fmt(o.power.so_media_kw,2)} kW`]].forEach(([k,v],i)=>{ s += text(ax, ay+i*52, k, {cls:'t-eyebrow'}) + text(ax, ay+i*52+22, v, {cls:'t-tb-b',style:'font-size:18px'}); });
-  s += mediaLegend(28, H-16-58-16*2-40, [so.nic_media, so.dpu_media, SS.media].filter(Boolean));
+  s += rect(dx, 40+30, dw, 34, {rx:3,cls:'f-none ink2',style:'stroke-dasharray:5 4;stroke-width:1'}) + text(dx+dw/2, 40+51, `Spine / pod fabric · ${M(SS.media).short}`, {cls:'t-small',anchor:'middle'});
+  const ly=125, lh=62; s += line(dx+dw/2, 104, dx+dw/2, ly, {cls:'ink2',style:'stroke-dasharray:5 4'});
+  s += dest(ly, lh, 'leaf', `Backend leaf · ${SS.name.split(' (')[0]}`, `${cages} × ${so.module_gbps}G per tray · ${fmt(S.modules_nic_side)} per rack`, `${fmt(S.leaf_switches)} × leaf (${SS.ports} × ${SS.port_gbps}G, ${so.oversub}:1)`, 'f-sw');
+  const fy2 = 250; if (dpuN) s += dest(fy2, lh, 'soseg:so_dpu', 'Front-end / storage leaf', `${dpuN} × ${P.gbps}G per tray · ${fmt(o.n.dpus)} per rack`, `${fmt(S.dpu_gbps_dir/1000,1)} Tb/s · ${dpuM.name}`, 'f-dpu');
+  const my = 360; if (mgmt) s += dest(my, 48, 'mgmt', 'Management switch · 1 GbE', `${mgmt} per tray · ${mgmt*r.compute_trays} per rack (+ ${r.switch_trays} switch trays)`, '', 'f-panel');
+  // connections: cage → destination
+  nicCage.forEach((c,i)=>{ const ty = ly + 12 + (i%5)*8; s += path(`M${c.x} ${c.y} C ${c.x} ${c.y-60}, ${dx-120} ${ty}, ${dx} ${ty}`, {cls:'f-none',style:`stroke:${nicM.color};stroke-width:1.6;opacity:.85`, extra:dash(so.nic_media)}); });
+  dpuCage.forEach((c,i)=>{ const ty = fy2 + 14 + i*10; s += path(`M${c.x} ${c.y} C ${c.x} ${c.y-30}, ${dx-100} ${ty}, ${dx} ${ty}`, {cls:'f-none',style:`stroke:${dpuM.color};stroke-width:1.6;opacity:.85`, extra:dash(so.dpu_media)}); });
+  if (mgmt){ const g = groups.find(g=>g.sel==='mgmt'); const mx=g.x1+11; s += path(`M${mx} ${cy-9} L${mx} ${fy-14} L${dx-34} ${fy-14} L${dx-34} ${my+24} L${dx} ${my+24}`, {cls:'f-none',style:`stroke:${D.CONNECTOR_CATS.mgmt.color};stroke-width:1.2;opacity:.75`}); }
+  // cable count on the backend bundle
+  if (seg) s += callout(dx-70, ly+24, dx-70, ly-38, [`${fmt(seg.links)} × ${so.module_gbps}G links per rack`, `${fmt(seg.modules)} ${nicM.family==='optical'?'modules':'cable ends'} · ${fmt(seg.fibers||seg.pairs)} ${nicM.family==='optical'?'fibers':'twinax pairs'}`, `${fmt(seg.media_w/1000,2)} kW media · ≈ $${fmt(seg.media_usd/1000,0)}k`], nicM.color, 'end');
+
+  // ---- port inventory table
+  const tx=60, ty=fy+fh+156, cols=[0,170,250,330,470,700]; const cw=[170,80,80,140,230,120];
+  s += text(tx, ty-12, 'PORT INVENTORY — PER COMPUTE TRAY AND PER RACK', {cls:'t-eyebrow'});
+  const rows = [['Port','Per tray','Speed','Media','Goes to','Per rack']];
+  if (nn) rows.push([`${N.name} port`, `${nn}`, `${N.gbps}G`, nicM.short, `Backend leaf (${SS.name.split(' (')[0]})`, `${fmt(o.n.nics)}`]);
+  if (cages) rows.push([`${so.module_gbps}G ${nicM.family==='optical'?'optical cage':'copper cage'}`, `${cages}`, `${so.module_gbps}G`, nicM.short, `${portsPerCage>1?portsPerCage+' NIC ports per cage':'1 NIC port per cage'}`, `${fmt(S.modules_nic_side)}`]);
+  if (dpuN) rows.push([`${P.name} port`, `${dpuN}`, `${P.gbps}G`, dpuM.short, 'Front-end / storage leaf', `${fmt(o.n.dpus)}`]);
+  if (mgmt) rows.push(['BMC RJ45', `${mgmt}`, '1G', 'Cat6', 'Management switch', `${mgmt*r.compute_trays}`]);
+  if (drives) rows.push(['E1.S NVMe bay', `${drives}`, 'PCIe', '—', 'Local (no network)', `${drives*r.compute_trays}`]);
+  rows.push([`Rear: ${b.scaleup.name} connector`, `${r.xpus_per_tray*b.scaleup.links_per_xpu} links`, `${fmt(o.link.link_gbps_dir)}G`, M(b.scaleup.media_xpu_sw).short, o.n.sw_chips?'Scale-up switch trays (not on the front)':'Neighbouring trays (not on the front)', `${fmt(o.topo.links)}`]);
+  rows.forEach((row,i)=>{ const y=ty+i*20; if (i===0) s += line(tx, y+8, tx+840, y+8, {cls:'ink'}); else s += line(tx, y+8, tx+840, y+8, {cls:'rule2'});
+    row.forEach((c,j)=>{ s += text(tx+cols[j]+(j===1||j===5?cw[j]-8:0), y+2, c, {cls:i===0?'t-eyebrow':(j===1||j===5?'t-mono':'t-small'), anchor:(j===1||j===5)?'end':'start', style:i===0?'':'fill:var(--ink)'}); }); });
+
+  // ---- headline stats (right, under destinations)
+  const ax=dx, ay=428;
+  [['PER XPU', `${fmt(S.per_xpu_gbps)} Gb/s`],['PER RACK', `${fmt(S.rack_tbs_dir,1)} Tb/s per direction`],['SCALE-UP : SCALE-OUT', `${fmt(S.ratio_su_so,1)} : 1`],['OPTICS + SERDES POWER', `${fmt(o.power.so_media_kw+o.power.so_serdes_kw,2)} kW per rack`]].forEach(([k,v],i)=>{ s += text(ax, ay+i*44, k, {cls:'t-eyebrow'}) + text(ax, ay+i*44+19, v, {cls:'t-tb-b',style:'font-size:16px'}); });
+  s += mediaLegend(dx, ay+4*44+8, [so.nic_media, so.dpu_media, SS.media].filter(Boolean));
   return sheet(W,H,ctx,s);
 }
 
@@ -1518,6 +1560,12 @@ function renderInspector(){
         ${kv([['Ports', fmt(s.links)],['Lanes × rate per port', `${s.lanes} × ${fmt(s.lane_gbps)}G`], m.family==='optical'?['Fibers', fmt(s.fibers)]:['Twinax pairs', fmt(s.pairs)],['Media power', `${fmt(s.media_w/1000,2)} kW`],['SerDes power', `${fmt(s.serdes_w/1000,2)} kW @ ${s.pj} pJ/bit`],['Media cost (est.)', `$${fmt(s.media_usd/1000,0)}k`], isNic?['Leaf switches (share)', `${o.so.leaf_switches} × ${SS.name}`]:null])}
         <div class="note small" style="margin-top:6px">${esc(m.note)}</div></div>`;
       h += `<div class="sec"><h4>Change</h4><div class="form">${mediaSel('Media', isNic?'scaleout.nic_media':'scaleout.dpu_media')}${isNic?inp('Port speed','scaleout.module_gbps',{select:[[400,'400G'],[800,'800G'],[1600,'1.6T'],[3200,'3.2T']]}):''}${isNic?inp('Leaf oversubscription','scaleout.oversub',{small:'downlinks : uplinks'}):''}</div></div>`; }
+  } else if (kind==='mgmt'){
+    h += head('Management port', `BMC 1 GbE · ${b.rack.mgmt_ports_per_tray ?? 1} per tray`);
+    h += `<div class="sec">${kv([['Per rack', `${(b.rack.mgmt_ports_per_tray ?? 1) * b.rack.compute_trays} compute + ${b.rack.switch_trays} switch trays`],['Goes to', 'Out-of-band management switch (1 GbE)'],['Media', 'Cat6 / RJ45']])}<div class="form" style="margin-top:8px">${inp('BMC ports per tray','rack.mgmt_ports_per_tray',{step:1})}</div></div>`;
+  } else if (kind==='drives'){
+    h += head('E1.S NVMe bays', `${b.rack.drives_per_tray ?? 0} per tray · local storage`);
+    h += `<div class="sec">${kv([['Per rack', `${(b.rack.drives_per_tray ?? 0) * b.rack.compute_trays}`],['Network', 'None — attached over PCIe to the host / DPU']])}<div class="form" style="margin-top:8px">${inp('Drive bays per tray','rack.drives_per_tray',{step:1})}</div></div>`;
   } else if (kind==='leaf'){
     h += head(SS.name, `${SS.vendor} · scale-out leaf · ${o.so.leaf_switches} needed (share)`, SS.conf);
     h += `<div class="sec">${kv([['Radix', `${SS.ports} × ${SS.port_gbps}G`],['Throughput', `${SS.tbs} Tb/s`],['Native media', esc(D.MEDIA[SS.media].name)],['Downlinks needed', fmt(o.so.leaf_ports_needed,0)],['Oversubscription', `${so.oversub}:1`]])}<div class="form" style="margin-top:8px">${inp('Leaf switch','scaleout.so_sw',{select:Object.values(D.SO_SWITCHES).map(x=>[x.id,x.name])})}${inp('Oversubscription','scaleout.oversub')}</div></div>`;
@@ -1559,7 +1607,7 @@ function renderBuild(){
   <div class="tools"><button class="btn small primary" id="save-custom">Save as new architecture</button><button class="btn small" id="reset-build">Reset to preset</button></div>
   <div class="sec"><h4>Identity</h4><div class="form">${inp('Name','name',{text:true})}${inp('Vendor','vendor',{text:true})}${inp('Status','status',{text:true})}${inp('Year','year',{text:true})}${inp('Confidence','conf',{select:[['H','H — documented'],['M','M — vendor-stated / partial'],['L','L — estimate']]})}<label class="wide">Tagline</label><input class="wide" data-path="tagline" value="${esc(b.tagline||'')}"></div></div>
   <div class="sec"><h4>Rack</h4><div class="form">${inp('Compute trays','rack.compute_trays',{step:1})}${inp('XPUs per tray','rack.xpus_per_tray',{step:1})}${inp('CPUs per tray','rack.cpus_per_tray',{step:1})}${inp('Boards per tray','rack.boards_per_tray',{step:1})}${inp('Switch trays','rack.switch_trays',{step:1})}${inp('Switch ASICs per switch tray','rack.switch_chips_per_tray',{step:1})}${inp('Switch ASICs per compute tray','rack.switch_chips_per_compute_tray',{step:1,small:'baseboard NVSwitch / UBB'})}${inp('Rack height','rack.rack_u',{small:'U',step:1})}${inp('Compute tray height','rack.tray_u',{small:'U (blank = auto)',step:1})}${inp('Stated rack power','rack.power_kw',{small:'kW'})}${inp('Cooling','rack.cooling',{text:true})}${inp('Form factor','rack.form',{text:true})}</div></div>
-  <div class="sec"><h4>Building blocks</h4><div class="form">${inp('XPU','xpu',{select:opt(D.XPUS)})}${inp('Host CPU','cpu',{select:opt(D.CPUS)})}${inp('Scale-out NIC','nic',{select:opt(D.NICS)})}${inp('NICs per XPU','rack.nics_per_xpu',{step:'any'})}${inp('DPU','dpu',{select:opt(D.DPUS)})}${inp('DPUs per tray','rack.dpus_per_tray',{step:1})}</div><div class="hint" style="padding:6px 0 0">Pick from the library on the left or here; edit a block's specs from the Inspector after clicking it in the drawing.</div></div>
+  <div class="sec"><h4>Building blocks</h4><div class="form">${inp('XPU','xpu',{select:opt(D.XPUS)})}${inp('Host CPU','cpu',{select:opt(D.CPUS)})}${inp('Scale-out NIC','nic',{select:opt(D.NICS)})}${inp('NICs per XPU','rack.nics_per_xpu',{step:'any'})}${inp('DPU','dpu',{select:opt(D.DPUS)})}${inp('DPUs per tray','rack.dpus_per_tray',{step:1})}${inp('E1.S drive bays per tray','rack.drives_per_tray',{step:1})}${inp('BMC ports per tray','rack.mgmt_ports_per_tray',{step:1})}</div><div class="hint" style="padding:6px 0 0">Pick from the library on the left or here; edit a block's specs from the Inspector after clicking it in the drawing.</div></div>
   <div class="sec"><h4>Scale-up fabric</h4><div class="form">${inp('Fabric name','scaleup.name',{text:true})}${inp('Topology','scaleup.topology',{select:Object.values(D.TOPOLOGIES).map(t=>[t.id,t.name])})}${inp('Links per XPU','scaleup.links_per_xpu',{step:1})}${inp('Lanes per link','scaleup.lanes_per_link',{step:1})}${inp('Lane rate','scaleup.lane_gbps',{small:'Gb/s per lane per direction'})}${inp('Switch ASIC','scaleup.sw',{select:opt(D.SU_SWITCHES)})}${mediaSel(isTorus?'In-tray links':'XPU → switch media','scaleup.media_xpu_sw')}${mediaSel(isTorus?'Tray ↔ tray links':'Tray ↔ tray / inter-node media','scaleup.media_tray_tray')}${isTorus?mediaSel('Wrap-around (leaving rack)','scaleup.media_ext'):''}${isTorus?inp('Wrap-around leaves the rack','scaleup.wrap_external',{bool:true}):''}${inp('Vendor bidirectional figure','scaleup.vendor_bidir_tbs',{small:'TB/s per XPU, for the check'})}</div><div class="note small" style="margin-top:6px">${esc(D.TOPOLOGIES[su.topology].desc)}</div></div>
   <div class="sec"><h4>Scale-out network</h4><div class="form">${mediaSel('NIC media','scaleout.nic_media')}${inp('Port / module speed','scaleout.module_gbps',{select:[[400,'400G'],[800,'800G'],[1600,'1.6T'],[3200,'3.2T']]})}${inp('Leaf switch','scaleout.so_sw',{select:opt(D.SO_SWITCHES)})}${inp('Leaf oversubscription','scaleout.oversub',{small:'downlinks : uplinks'})}${mediaSel('DPU media','scaleout.dpu_media')}</div></div>
   <div class="sec"><h4>Board</h4><div class="form">${inp('Board name','board.name',{text:true})}${inp('XPUs per board','board.xpus',{step:1})}${inp('CPUs per board','board.cpus',{step:1})}${inp('Memory modules per CPU','board.mem_per_cpu',{step:1})}${inp('Memory type','board.mem_type',{text:true})}</div><div class="hint" style="padding:6px 0 0">Connectors are edited by clicking the board in the Board view.</div></div>
