@@ -4,6 +4,8 @@ Interactive AI rack network explorer for the scale-up and scale-out architecture
 
 Open `index.html` in a browser. No build step, no dependencies, no server.
 
+A companion page, `workload.html`, explains how a modern LLM is trained and served and ties every step to the rack: pre-training FLOPs and wall clock, parallelism (TP / PP / DP / EP) mapped to the scale-up and scale-out networks, training memory, checkpoints and failure rates, prefill vs decode, the decode roofline, KV cache and concurrency, disaggregated serving, and tokens per megawatt. It reads the same hardware presets and has its own model presets (Llama 3.1 405B/70B, DeepSeek-V3, Mixtral, a GPT-4-class estimate, an illustrative 2026 frontier MoE) with editable shape and assumption inputs.
+
 ## What it does
 
 - **Five drawing sheets per architecture**, in a consistent engineering-drawing house style with a title block: Board (component & connector map), Tray (compute and switch tray plan view), Rack (elevation with scale-up spine and scale-out exits), Scale-up fabric (bipartite / mesh / 2D-3D torus topology), Scale-out network (NICs → optics → leaf).
@@ -26,7 +28,8 @@ Open `index.html` in a browser. No build step, no dependencies, no server.
 | `js/compute.js` | Pure functions: build + assumptions → link math, segments, power, cost, BOM, checks |
 | `js/render.js` | SVG drawing engine for the five sheets and the compare table |
 | `js/app.js` | State, panels, events, persistence |
-| `build.mjs` | `node build.mjs` inlines everything into `dist/rack-explorer.html` (single shareable file) |
+| `workload.html`, `css/workload.css`, `js/workload.js` | LLM Workload Explorer page: model presets, training and inference calculators, figures |
+| `build.mjs` | `node build.mjs` inlines everything into `dist/rack-explorer.html` and `dist/llm-workloads.html` (single shareable files) |
 
 ## Data caveats
 

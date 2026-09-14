@@ -53,6 +53,7 @@ header.top{display:flex;align-items:center;gap:16px;padding:0 16px;height:52px;b
 .wordmark .eyebrow{font:600 10px/1 var(--ui);letter-spacing:.12em;text-transform:uppercase;color:var(--brand)}
 .wordmark .name{font:600 20px/1.05 var(--disp);letter-spacing:.01em;margin-top:3px}
 .top .spacer{flex:1}
+.top .nav{display:flex;gap:4px} .top .nav a{font:500 13px var(--ui);color:var(--ink-2);text-decoration:none;padding:6px 10px;border-radius:6px;border:1px solid var(--rule);background:var(--sheet)} .top .nav a:hover{color:var(--ink);border-color:var(--ink-3)} .top .nav a.cur{color:var(--brand);border-color:var(--brand)}
 .tabs{display:flex;gap:2px;background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:2px}
 .tabs button{border:0;background:transparent;padding:6px 12px;border-radius:6px;font:500 13px var(--ui);color:var(--ink-2)}
 .tabs button[aria-selected="true"]{background:var(--sheet);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
@@ -210,6 +211,7 @@ textarea.io{width:calc(100% - 28px);margin:6px 14px;height:120px;border:1px soli
 <div id="app">
   <header class="top">
     <div class="wordmark"><span class="eyebrow">Edgewater Research</span><span class="name">Rack Explorer</span></div>
+    <nav class="nav row"><a href="index.html" class="cur">Rack Explorer</a><a href="workload.html">LLM workloads</a></nav>
     <select id="preset-select" class="ctl" aria-label="Rack architecture"></select>
     <div class="tabs" role="tablist" id="view-tabs">
       <button role="tab" data-view="board">Board</button>
